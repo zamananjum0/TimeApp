@@ -40,31 +40,35 @@ class MemberProfile < ApplicationRecord
     status, message = validate_email_and_password(data)
     if !status.present?
       if member_profile.save
-        resp_status = 1
+        resp_status  = 1
         resp_message = 'Please check your email and verify your account.'
-        resp_errors = ''
+        resp_errors  = ''
       else
-        resp_status = 0
+        resp_status  = 0
         resp_message = 'Errors'
-        resp_errors = error_messages(member_profile)
+        resp_errors  = error_messages(member_profile)
       end
     else
-      resp_status = 0
-      resp_message = 'Errors'
-      resp_errors = message
+      resp_status  = 0
+      resp_message = 'error'
+      resp_errors  = message
     end
     resp_data = ''
     resp_request_id = data[:request_id] if data && data[:request_id].present?
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 
-  def self.validate_email_and_password(data)
-    status = false
-    message = ''
-    if data[:member_profile][:user_attributes][:email] != data[:member_profile][:user_attributes][:email]
-      message = "Email mismatch."
-      status = true
+  def self.error_messages(error_array)
+    error_string = ''
+    error_array.errors.full_messages.each do |message|
+      error_string += message + ', '
     end
+    error_string
+  end
+
+  def self.validate_email_and_password(data)
+    status  = false
+    message = ''
     if data[:member_profile][:user_attributes][:password] != data[:member_profile][:user_attributes][:password_confirmation]
       message = "Password mismatch."
       status = true
