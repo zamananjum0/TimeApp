@@ -1,0 +1,28 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: 25
+  username: <%= ENV['TIME_DB_USERNAME_' + ENV['TIME_MODE']]%>
+  password: <%= ENV['TIME_DB_PASSWORD_' + ENV['TIME_MODE']]%>
+  host: <%= ENV['TIME_DB_HOST_' + ENV['TIME_MODE']]%>
+  port: <%= ENV['TIME_DB_PORT_' + ENV['TIME_MODE']]%>
+
+
+development:
+  <<: *default
+  database: <%= ENV['TIME_DB_NAME_' + ENV['TIME_MODE']]%>
+
+
+staging:
+  <<: *default
+  database: <%= ENV['TIME_DB_NAME_' + ENV['TIME_MODE']]%>
+
+
+test:
+  <<: *default
+  database: TIME_test
+
+
+production:
+  <<: *default
+  database: <%= ENV['TIME_DB_NAME_' + ENV['TIME_MODE']]%>

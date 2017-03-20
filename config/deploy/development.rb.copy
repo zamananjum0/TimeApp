@@ -1,0 +1,7 @@
+server '23.92.19.41', user: 'live', roles: %w{app db web}
+
+set :application, 'TimeApp'
+
+set :deploy_to, '/home/live/TimeApp'
+
+set :repo_url, 'https://github.com/faisalsahil/TimeApp.git'
