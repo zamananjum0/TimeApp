@@ -16,8 +16,6 @@ class User < ApplicationRecord
   accepts_nested_attributes_for :user_authentications
   attr_accessor :login
   scope :admin_profiles, -> { where(profile_type: 'AdminProfile') }
-
-  validates_uniqueness_of :phone, allow_nil: true
   
   multisearchable against: [:first_name, :last_name, :email],
                   if: :published?

@@ -23,13 +23,13 @@ class MemberProfile < ApplicationRecord
 
 
   pg_search_scope :search_by_name,
-                  against: :name,
-                  using: {
-                      tsearch: {
-                          any_word: true,
-                          dictionary: "english"
-                      }
-                  }
+    against: :name,
+    using: {
+        tsearch: {
+            any_word: true,
+            dictionary: "english"
+        }
+    }
 
 
   def self.sign_up(data)
@@ -78,11 +78,11 @@ class MemberProfile < ApplicationRecord
 
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
-        only: [:id, :about, :phone, :photo, :country_id, :state_id, :city_id, :is_profile_public, :default_group_id, :gender, :promotion_updates, :dob, :account_type, :height, :weight, :school],
+        only: [:id, :photo, :is_profile_public],
         methods: [:posts_count,:followings_count, :followers_count],
         include: {
             user: {
-                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
+                only: [:id, :username, :email],
             }
         }
     ).merge!(auth_token: auth_token).as_json
