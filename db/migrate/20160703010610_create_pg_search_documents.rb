@@ -1,7 +1,8 @@
 class CreatePgSearchDocuments < ActiveRecord::Migration
   def self.up
     say_with_time("Creating table for pg_search multisearch") do
-      create_table :pg_search_documents do |t|
+      enable_extension 'uuid-ossp' unless extension_enabled?('uuid-ossp')
+      create_table :pg_search_documents , id: :uuid, default: 'uuid_generate_v4()' do |t|
         t.text :content
         t.belongs_to :searchable, polymorphic: true, index: true
         t.timestamps null: false

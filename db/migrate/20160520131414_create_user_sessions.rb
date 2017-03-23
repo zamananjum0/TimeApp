@@ -1,7 +1,8 @@
 class CreateUserSessions < ActiveRecord::Migration[5.0]
   def change
-    create_table :user_sessions do |t|
-      t.integer :user_id
+    enable_extension 'uuid-ossp' unless extension_enabled?('uuid-ossp')
+    create_table :user_sessions , id: :uuid, default: 'uuid_generate_v4()' do |t|
+      t.uuid   :user_id
       t.string :device_type
       t.string :device_uuid
       t.string :auth_token

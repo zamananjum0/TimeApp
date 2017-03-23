@@ -1,19 +1,14 @@
 class DeviseCreateUsers < ActiveRecord::Migration[5.0]
   def change
-    create_table :users do |t|
+    enable_extension 'uuid-ossp' unless extension_enabled?('uuid-ossp')
+    create_table :users, id: :uuid, default: 'uuid_generate_v4()' do |t|
       ## Database authenticatable
       t.string :email, unique: true, allow_nil: true
       t.string :encrypted_password, null: false, default: ""
-      t.string   :profile_type
       t.string   :authentication_token
-      t.string   :first_name
-      t.string   :last_name
-      t.string   :phone
-      t.integer  :profile_id
-      t.integer  :role_id
-      
-
-      t.boolean  :is_deleted,            default: false
+      t.string   :username
+      t.string   :profile_type
+      t.uuid     :profile_id
       t.datetime :last_subscription_time
       t.datetime :synced_datetime
 

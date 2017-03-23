@@ -2,18 +2,13 @@ class PostComment < ApplicationRecord
   include JsonBuilder
   belongs_to :post
   belongs_to :member_profile
-  # has_many :report_comments, dependent: :destroy
-  # validates_presence_of :post_comment, presence: true
-  # has_many :reports, as: :reportable
-
-
   @@limit = 10
 
   def self.post_comment(data, current_user)
     begin
       data                           = data.with_indifferent_access
-      post                           = Post.find_by_id(data[:post][:id])
-      post_comment                   = post.post_comments.build(data[:post][:post_comment])
+      post                           = Post.find_by_id(data[:post_id])
+      post_comment                   = post.post_comments.build(data[:post_comment])
       post_comment.member_profile_id = current_user.profile.id
       if post_comment.save
         resp_status     = 1
@@ -23,7 +18,7 @@ class PostComment < ApplicationRecord
         post_comments   = PostComment.where(id: post_comment.id)
         resp_data       =  posts_comments_response(post_comments, current_user, post)
       else
-        resp_data       = []
+        resp_data       = {}
         resp_request_id = data[:request_id]
         resp_status     = 0
         resp_message    = 'Errors'
@@ -44,7 +39,7 @@ class PostComment < ApplicationRecord
         [response, false]
       end
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
@@ -57,13 +52,12 @@ class PostComment < ApplicationRecord
   def self.post_comments_list(data, current_user, sync=nil)
     begin
       data = data.with_indifferent_access
-      max_comment_date = data[:max_comment_date] || Time.now
-      min_comment_date = data[:min_comment_date] || Time.now
+      max_comment_date = data[:max_comment_date]
+      min_comment_date = data[:min_comment_date]
 
-      post          = Post.find_by_id(data[:post][:id])
+      post          = Post.find_by_id(data[:post_id])
       post_comments = post.post_comments.where(is_deleted: false) if post.present?
       if post_comments
-
         if data[:max_comment_date].present?
           post_comments = post_comments.where("created_at > ?", max_comment_date)
         elsif data[:min_comment_date].present?
@@ -78,12 +72,13 @@ class PostComment < ApplicationRecord
           PostComment.where("created_at < ? AND post_id = ?", post_comments.last.updated_at, post.id).present? ? next_page_exist = true : next_page_exist = false
         end
 
+        paging_data     = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
         resp_data       = posts_comments_response(post_comments, current_user, post)
         resp_status     = 1
         resp_message    = 'Post Comments List'
         resp_errors     = ''
       else
-        resp_data       = ''
+        resp_data       = {}
         resp_status     = 0
         paging_data     = ''
         resp_message    = 'Errors'
@@ -92,12 +87,12 @@ class PostComment < ApplicationRecord
 
       resp_request_id = data[:request_id]
       if sync.present?
-        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync", next_page_exist: next_page_exist, previous_page_exist: previous_page_exist, post_list: true)
+        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync", paging_data: paging_data)
       else
-        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, next_page_exist: next_page_exist, previous_page_exist: previous_page_exist, post_list: true)
+        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
       end
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
@@ -137,52 +132,7 @@ class PostComment < ApplicationRecord
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
-
-  def self.report_post(data, current_user)
-    begin
-      data = data.with_indifferent_access
-      post        = Post.find_by_id(data[:post][:id])
-      report_post = post.report_posts.build(data[:post][:report_post])
-      report_post.save!
-      resp_status     = 1
-      resp_message    = 'Post Successfully reported.'
-      resp_errors     = ''
-      resp_data       = ''
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
-  def self.report_post_comment(data, current_user)
-    begin
-      data = data.with_indifferent_access
-
-      post_comment        = PostComment.find_by_id(data[:post_comment][:id])
-      report_post_comment = post_comment.report_comments.build(data[:post_comment][:report_post_comment])
-      report_post_comment.save!
-
-      resp_status     = 1
-      resp_message    = 'Post comment successfully reported.'
-      resp_errors     = ''
-      resp_data       = ''
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
-
+  
   # called from controller
   def self.post_comment_response(post_comment)
     post_comment = post_comment.as_json(
@@ -215,15 +165,10 @@ class PostComment < ApplicationRecord
         only:    [:id, :post_id, :post_comment, :created_at, :updated_at],
         include: {
             member_profile: {
-                only:    [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender],
+                only:    [:id, :photo],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name],
-                        include: {
-                            # role: {
-                            #     only: [:id, :name]
-                            # }
-                        }
+                        only: [:id, :username, :email]
                     }
                 }
             }
@@ -238,39 +183,19 @@ class PostComment < ApplicationRecord
         status = false
       end
       post = post.as_json(
-          only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
+          only: [:id, :post_title, :post_type],
           methods: [:likes_count, :comments_count, :post_members_counts],
           include: {
               member_profile: {
                   only: [:id, :photo],
                   include: {
                       user: {
-                          only: [:id, :first_name, :last_name],
-                          include:{
-                              # role: {
-                              #     only: [:id, :name]
-                              # }
-                          }
+                          only: [:id, :username, :email]
                       }
                   }
               },
               post_attachments: {
-                  only: [:id, :attachment_url, :thumbnail_url, :attachment_type],
-                  include:{
-                      post_photo_users:{
-                          only:[:id, :member_profile_id, :post_attachment_id],
-                          include: {
-                              member_profile: {
-                                  only: [:id],
-                                  include: {
-                                      user: {
-                                          only: [:id, :first_name, :last_name]
-                                      }
-                                  }
-                              }
-                          }
-                      }
-                  }
+                  only: [:id, :attachment_url, :thumbnail_url, :attachment_type]
               }
           }
       ).merge!(liked_by_me: status)

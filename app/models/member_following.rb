@@ -1,8 +1,9 @@
 class MemberFollowing < ApplicationRecord
-
-  include AppConstants
-  belongs_to :member_profile
   @@limit = 10
+  include AppConstants
+  
+  belongs_to :member_profile
+ 
 
 
   def self.search_member(data, current_user)
@@ -10,8 +11,12 @@ class MemberFollowing < ApplicationRecord
       data = data.with_indifferent_access
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
-
-      profile_ids = User.where('first_name LIKE ? OR last_name LIKE ? OR email LIKE ?', "%#{data[:member_following][:search_keyword]}%", "%#{data[:member_following][:search_keyword]}%", "%#{data[:member_following][:search_keyword]}%").pluck(:profile_id)
+      users    = User.all
+      if data[:search_key].present?
+        profile_ids = users.where('username LIKE ? OR email LIKE ?',"%#{data[:search_key]}%", "%#{data[:search_key]}%").pluck(:profile_id)
+      else
+        profile_ids = users.pluck(:profile_id)
+      end
       if profile_ids.present?
         member_profiles = MemberProfile.where(id: profile_ids)
 
@@ -24,13 +29,13 @@ class MemberFollowing < ApplicationRecord
         resp_message = 'success'
         resp_errors = ''
       else
-        resp_data = ''
-        resp_status = 0
-        resp_message = 'Errors'
+        resp_data = {}
+        resp_status = 1
+        resp_message = 'success'
         resp_errors = 'No string match found.'
       end
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
@@ -41,13 +46,12 @@ class MemberFollowing < ApplicationRecord
   end
 
   def self.response_member_profiles(member_profiles)
-    # ActiveRecord::Base.include_root_in_json = true
     member_profiles = member_profiles.as_json(
         {
-            only: [:id, :about, :phone, :photo, :country_id, :gender, :dob],
+            only: [:id, :photo],
             include: {
                 user: {
-                    only: [:id, :first_name, :last_name,:email]
+                    only: [:id, :username, :email]
                 }
             }
         }
@@ -61,26 +65,28 @@ class MemberFollowing < ApplicationRecord
       data = data.with_indifferent_access
 
       member_profile       = current_user.profile
-      member_following    = MemberFollowing.find_by_member_profile_id_and_following_profile_id(member_profile.id, data[:member_following][:following_profile_id])
-      following_to_profile = MemberProfile.find(data[:member_following][:following_profile_id])
+      member_following    = MemberFollowing.find_by_member_profile_id_and_following_profile_id(member_profile.id, data[:following_profile_id])
+      following_to_profile = MemberProfile.find(data[:following_profile_id])
       is_accepted = false
       if member_following.blank?
-        member_following   = member_profile.member_followings.build(data[:member_following])
-        if following_to_profile && following_to_profile.is_profile_public
+        member_following   = member_profile.member_followings.build
+        member_following.following_profile_id = data[:following_profile_id]
+        if following_to_profile #&& following_to_profile.is_profile_public
           member_following.following_status = AppConstants::ACCEPTED
           resp_message = 'Following Request Submitted'
           is_accepted  = true
         else
-          send_notification(data[:member_following][:following_profile_id])
+          # send_notification(data[:member_following][:following_profile_id])
           resp_message = 'Request sent.'
         end
         member_following.save!
         resp_status = 1
         resp_errors = ''
       else
-        member_following.following_status = AppConstants::PENDING
+        member_following.following_status = AppConstants::ACCEPTED
         member_following.is_deleted = false
         member_following.save!
+        is_accepted  = true
         resp_message = 'Following Request Submitted.'
         resp_status  = 1
         resp_errors  = ''
@@ -88,7 +94,7 @@ class MemberFollowing < ApplicationRecord
 
       resp_data      = {is_im_following: MemberProfile.is_following(following_to_profile, current_user)}
     rescue Exception => e
-      resp_data      = ''
+      resp_data      = {}
       resp_status    = 0
       resp_message   = 'error101'
       resp_errors    = e
@@ -101,8 +107,7 @@ class MemberFollowing < ApplicationRecord
   def self.unfollow_member(data, current_user)
     begin
       data             =  data.with_indifferent_access
-      # profile          =  current_user.profile
-      member_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id(current_user.profile_id, data[:member_following][:following_profile_id])
+      member_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id(current_user.profile_id, data[:following_profile_id])
       if member_following.present?
         member_following.is_deleted = true
         member_following.save!
@@ -114,10 +119,10 @@ class MemberFollowing < ApplicationRecord
         resp_message = 'Errors'
         resp_errors = 'No Follower Found.'
       end
-      following_to_profile = MemberProfile.find_by_id(data[:member_following][:following_profile_id])
+      following_to_profile = MemberProfile.find_by_id(data[:following_profile_id])
       resp_data    = {is_im_following: MemberProfile.is_following(following_to_profile, current_user)}
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
@@ -374,9 +379,6 @@ class MemberFollowing < ApplicationRecord
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
-
-
-
 end
 
 # == Schema Information

@@ -4,39 +4,27 @@ class Post < ApplicationRecord
   include PgSearch
 
   belongs_to :member_profile
-  has_many :post_videos, dependent: :destroy
   has_many :post_members, dependent: :destroy
-  has_many :post_users, dependent: :destroy
   has_many :post_attachments, dependent: :destroy
-  has_many :album_images, dependent: :destroy
   has_many :post_likes, dependent: :destroy
   has_many :recent_post_likes, -> { order(created_at: :desc).limit(5) }, class_name: 'PostLike'
   has_many :post_comments, dependent: :destroy
   has_many :recent_post_comments, -> { order(created_at: :desc).limit(5) }, class_name: 'PostComment'
-
-  # has_many :recent_reported_posts, -> { order(created_at: :desc).limit(5) }, class_name: 'ReportPost'
-  # has_many :report_posts, dependent: :destroy
-  # has_many :reports, as: :reportable
-
-
-   accepts_nested_attributes_for :post_videos, :post_attachments, :post_members, :post_users
-
-  validates :is_post_public, inclusion: {in: [true, false]}
-
+  
+  accepts_nested_attributes_for :post_attachments, :post_members
+  
   after_commit :process_hashtags
-  @@limit = 10
+  @@limit = 1
   @@current_profile = nil
-
-
-
+  
   pg_search_scope :search_by_title,
-                  against: [:post_description, :post_title],
-                  using: {
-                      tsearch:{
-                          any_word: true,
-                          dictionary: 'english'
-                      }
-                  }
+    against: [:post_description, :post_title],
+    using: {
+        tsearch:{
+            any_word: true,
+            dictionary: 'english'
+        }
+    }
 
 
 
@@ -60,87 +48,64 @@ class Post < ApplicationRecord
   end
 
   def self.post_create(data, current_user)
-     begin
+     # begin
       data = data.with_indifferent_access
       profile = current_user.profile
       post = profile.posts.build(data[:post])
-      if post.save
-        # if data[:album_id].present?
-        #   album   = current_user.profile.user_albums.find_by_id(data[:album_id])
-        # else
-        #   album   = current_user.profile.user_albums.find_by_default_album(true)
-        # end
-        # response        = post_to_timeline_album(album, post, current_user)
-        resp_data       = post.post_response
-        resp_status     = 1
-        resp_message    = 'Post Created'
-        resp_errors     = ''
+      if profile.posts.count < profile.remaining_posts_count
+        if post.save
+          resp_data       = post.post_response
+          resp_status     = 1
+          resp_message    = 'Post Created'
+          resp_errors     = ''
+        else
+          resp_data       = {}
+          resp_status     = 0
+          resp_message    = 'Errors'
+          resp_errors     = post.errors.messages
+        end
       else
-        resp_data       = ''
-        resp_status     = 0
-        resp_message    = 'Errors'
-        resp_errors     = post.errors.messages
+        resp_data       = {}
+        resp_status     = 1
+        resp_message    = 'You are exceeding your posts limit'
+        resp_errors     = ''
       end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-    end
+    # rescue Exception => e
+    #   resp_data       = {}
+    #   resp_status     = 0
+    #   paging_data     = ''
+    #   resp_message    = 'error'
+    #   resp_errors     = e
+    # end
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 
   def post_response
     post = self.as_json(
-        only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public],
-         methods: [:likes_count],
+        only: [:id, :post_title, :post_description],
+        methods: [:likes_count],
         include: {
             member_profile: {
-                only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender, :dob],
+                only: [:id, :photo],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name],
-                        include:{
-                            # role: {
-                            #     only:[:id, :name]
-                            # }
+                        only: [:id, :username, :email]
                     }
                 }
             }
         },
         post_attachments: {
-            only: [:attachment_url, :thumbnail_url, :attachment_type],
-            include:{
-                post_photo_users:{
-                    only:[:id, :member_profile_id],
-                    include: {
-                        member_profile: {
-                            only: [:id],
-                            include: {
-                                user: {
-                                    only: [:id, :first_name, :last_name]
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            only: [:attachment_url, :thumbnail_url, :attachment_type]
         },
         recent_post_comments: {
             only: [:id, :post_comment],
             include: {
                 member_profile: {
-                    only: [:id, :about, :phone, :photo, :country_id, :gender],
+                    only: [:id, :photo],
                     include: {
                         user: {
-                            only: [:id, :first_name, :last_name],
-                            include:{
-                                # role: {
-                                #     only:[:id, :name]
-                                # }
-                            }
+                            only: [:id, :username, :email]
                         }
                     }
                 }
@@ -150,21 +115,15 @@ class Post < ApplicationRecord
             only: [:id],
             include: {
                 member_profile: {
-                    only: [:id, :about, :phone, :photo, :country_id, :gender],
+                    only: [:id, :photo],
                     include: {
                         user: {
-                            only: [:id, :first_name, :last_name],
-                            include:{
-                                # role: {
-                                #     only:[:id, :name]
-                                # }
-                            }
+                            only: [:id, :username, :email]
                         }
                     }
                 }
             }
         }
-      }
     )
 
     {post: post}.as_json
@@ -192,71 +151,17 @@ class Post < ApplicationRecord
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 
-  def self.post_update(data, current_user)
-    begin
-      data = data.with_indifferent_access
-      post = current_user.profile.posts.where(id: data[:post][:id]).try(:first)
-      if post
-        post.update_attributes(data[:post])
-        resp_data = post.post_response
-        resp_status = 1
-        resp_message = 'Updated Successfully'
-        resp_errors = ''
-      else
-        resp_data = ''
-        resp_status = 0
-        resp_message = 'Errors'
-        resp_errors = 'Post Does not exist'
-      end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
-  def self.post_show(data, current_user)
-    begin
-      data = data.with_indifferent_access
-      post = Post.find_by_id(data[:post][:id])
-      if post
-        resp_data       = post_and_related_posts(post,post.post_title)
-        resp_data = post.post_response
-        resp_status = 1
-        resp_message = 'success'
-        resp_errors = ''
-      else
-        resp_data = ''
-        resp_status = 0
-        resp_message = 'Errors'
-        resp_errors = 'Post Does not exist'
-      end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
   def self.posts_array_response(post_array, profile, sync_token=nil)
     @@current_profile = profile
     posts = post_array.as_json(
-        only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location],
+        only: [:id, :post_title, :created_at, :updated_at],
         methods: [:likes_count, :liked_by_me],
         include: {
             member_profile: {
-                only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender,],
+                only: [:id, :photo],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name]
+                        only: [:id, :username, :email]
                     }
                 }
             },
@@ -264,10 +169,10 @@ class Post < ApplicationRecord
                 only: [:id, :post_comment, :created_at, :updated_at],
                 include: {
                     member_profile: {
-                        only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender],
+                        only: [:id, :photo],
                         include: {
                             user: {
-                                only: [:id, :first_name, :last_name, :banner_image_1, :banner_image_2, :banner_image_3]
+                                only: [:id, :username, :email]
                             }
                         }
                     }
@@ -280,7 +185,7 @@ class Post < ApplicationRecord
                         only: [:id, :photo],
                         include: {
                             user: {
-                                only: [:id, :email, :first_name, :last_name, :banner_image_1, :banner_image_2, :banner_image_3]
+                                only: [:id, :username, :email]
                             }
                         }
                     }
@@ -293,29 +198,14 @@ class Post < ApplicationRecord
                         only: [:id, :photo],
                         include: {
                             user: {
-                                only: [:id, :first_name, :last_name]
+                                only: [:id, :username, :email]
                             }
                         }
                     }
                 }
             },
             post_attachments: {
-                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type],
-                include:{
-                    post_photo_users:{
-                        only:[:id, :member_profile_id, :post_attachment_id],
-                        include: {
-                            member_profile: {
-                                only: [:id],
-                                include: {
-                                    user: {
-                                        only: [:id, :first_name, :last_name]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type]
             }
         }
     )
@@ -351,19 +241,20 @@ class Post < ApplicationRecord
         Post.where("created_at > ?", posts.first.created_at).present? ? previous_page_exist = true : previous_page_exist = false
         Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
       end
+      paging_data = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
       resp_data = posts_array_response(posts, profile)
       resp_status = 1
       resp_message = 'Post list'
       resp_errors = ''
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
       resp_errors     = e
     end
     resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, next_page_exist: next_page_exist, previous_page_exist: previous_page_exist, post_list: true)
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 
   def self.post_sync(post_id, current_user)
@@ -392,7 +283,7 @@ class Post < ApplicationRecord
     sync_object.synced_date = posts.first.updated_at
     sync_object.save!
 
-    # resp_data = posts_array_response(posts, profile, sync_object.sync_token)
+    resp_data = posts_array_response(posts, profile, sync_object.sync_token)
     resp_status = 1
     resp_request_id = ''
     resp_message = 'Posts'
@@ -447,26 +338,27 @@ class Post < ApplicationRecord
         sync_object.synced_date = posts.first.updated_at
         sync_object.save!
 
+        paging_data = {next_page_exist: next_page_exist}
         resp_data = posts_array_response(posts, profile, sync_object.sync_token)
         resp_status = 1
         resp_request_id = ''
         resp_message = 'Posts'
         resp_errors = ''
         if start == 'start_sync'
-          JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: "Sync", next_page_exist: next_page_exist, post_list: true)
+          JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: "Sync", paging_data: paging_data)
         else
           JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: "Sync")
         end
       else
-        resp_data = ''
-        resp_status = 0
+        resp_data       = {}
+        resp_status     = 0
         resp_request_id = ''
-        resp_message = 'Posts Not Found'
-        resp_errors = ''
+        resp_message    = 'Posts Not Found'
+        resp_errors     = ''
         JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
       end
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
@@ -506,87 +398,11 @@ class Post < ApplicationRecord
   def comments_count
     self.post_comments.where(is_deleted: false).count
   end
-
-  def self.related_posts(data, current_user)
-    begin
-      data = data.with_indifferent_access
-
-      per_page = (data[:per_page] || 20).to_i
-      page = (data[:page] || 1).to_i
-
-      post = Post.find_by_id(data[:post][:id])
-      if post.present?
-        post.post_description.present? ? search_key = post.post_description : search_key = post.post_title
-        # posts = PgSearch.multisearch(search_key)
-        # posts = related_post_search(posts)
-        posts  = Post.search_by_title(search_key)
-
-
-        related_post_ids         = posts.pluck(:id)
-        nearest_posts            = Post.within(5, origin: [post.latitude, post.longitude])
-        nearest_related_posts    = nearest_posts.where(id: related_post_ids)
-        nearest_related_post_ids = nearest_related_posts.pluck(:id)
-
-        filtered_posts = posts.reject { |h| nearest_related_post_ids.include? h['id'] }
-
-        post_array = []
-        post_array << nearest_related_posts
-        post_array << filtered_posts
-        post_array = post_array.flatten
-
-        post_array = post_array.drop((page-1)*per_page)
-        post_array = post_array.take(per_page)
-
-        posts       = posts.page(page.to_i).per_page(per_page.to_i)
-        paging_data = JsonBuilder.get_paging_data(page, per_page, posts)
-
-        resp_data     = posts_array_response(post_array, current_user.profile)
-        resp_status   = 1
-        resp_message  = 'success'
-        resp_errors   = ''
-      else
-        resp_data     = ''
-        resp_status   = 0
-        resp_message  = 'Error'
-        resp_errors   = 'Post not found'
-        paging_data   = ''
-      end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-
-  end
-
-  def self.post_to_timeline_album(album, post, current_user)
-    if album.present?
-      post_attachments = post.post_attachments
-      if post_attachments.present?
-        post_attachments.each do |attachment|
-          album_image                          = album.album_images.build
-          album_image.attachment_url           = attachment.attachment_url
-          album_image.thumbnail_url            = attachment.thumbnail_url
-          album_image.post_attachment_id       = attachment.id
-          album_image.post_id                  = post.id
-          album_image.save
-        end
-      else
-        album_image                          = album.album_images.build
-        album_image.post_id                  = post.id
-        album_image.save
-      end
-    end
-  end
-
+  
   def self.timeline_posts_array_response(posts, profile, current_user)
     @@current_profile = profile
     posts = posts.as_json(
-        only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type],
+        only: [:id, :post_title, :created_at, :updated_at],
         methods: [:likes_count,  :liked_by_me],
         include: {
             recent_post_likes: {
@@ -596,12 +412,7 @@ class Post < ApplicationRecord
                         only: [:id, :photo],
                         include: {
                             user: {
-                                only: [:id, :email, :first_name, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
-                                include:{
-                                    # role: {
-                                    #     only:[:id, :name]
-                                    # }
-                                }
+                                only: [:id, :usernme, :email]
                             }
                         }
                     }
@@ -614,49 +425,24 @@ class Post < ApplicationRecord
                         only: [:id, :photo],
                         include: {
                             user: {
-                                only: [:id, :first_name, :last_name],
-                                include:{
-                                    # role: {
-                                    #     only:[:id, :name]
-                                    # }
-                                }
+                                only: [:id, :usernme, :email]
                             }
                         }
                     }
                 }
             },
             post_attachments: {
-                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type],
-                include:{
-                    post_photo_users:{
-                        only:[:id, :member_profile_id, :post_attachment_id],
-                        include: {
-                            member_profile: {
-                                only: [:id],
-                                include: {
-                                    user: {
-                                        only: [:id, :first_name, :last_name]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type]
             }
         }
     )
 
     is_following = MemberProfile.is_following(profile, current_user)
     member_profile = profile.as_json(
-        only: [:id, :about, :phone, :photo, :country_id, :state_id, :city_id, :gender, :dob, :height, :weight, :school],
+        only: [:id, :photo],
         include: {
             user: {
-                only: [:id, :first_name, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
-                include:{
-                    # role: {
-                    #     only:[:id, :name]
-                    # }
-                }
+                only: [:id, :email, :username]
             }
         }
     ).merge!(is_im_following: is_following)

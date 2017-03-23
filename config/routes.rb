@@ -33,15 +33,10 @@ Rails.application.routes.draw do
           get 'accepted_rejected_follower'
           get 'get_following_members'
           get 'get_profile'
-          get 'account_update'
+          put 'profile_update'
         end
       end
-      resources :messages do
-        collection do
-          get 'show_inbox'
-          # get 'sent_messages'
-        end
-      end
+      resources :events
       resources :posts do
         collection do
           get 'discover'
@@ -52,14 +47,15 @@ Rails.application.routes.draw do
           get 'auto_complete'
         end
       end
-      resources :user_albums do
+      resources :post_comments
+      resources :member_followings do
         collection do
-          get 'show_album'
-          get 'add_images_to_album'
-          get 'album_list'
-          get 'edit_album'
+          get 'search_member'
+          post 'follow_member'
+          post 'unfollow_member'
         end
       end
+      
     end
   end
 

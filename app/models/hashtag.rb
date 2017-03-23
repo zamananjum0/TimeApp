@@ -1,23 +1,15 @@
 class Hashtag < ApplicationRecord
-
   include PgSearch
-  # multisearchable against: [:name],
-  #                 if: :published?
-
+  
   pg_search_scope :search_by_title,
-                  against: :name,
-                  using: {
-                      tsearch:{
-                          any_word: true,
-                          dictionary: "english"
-                      }
-                  }
-
-  # def published?
-  #   true
-  #   # updated_at < Time.now
-  # end
-
+    against: :name,
+    using: {
+        tsearch:{
+            any_word: true,
+            dictionary: "english"
+        }
+    }
+  
   def self.auto_complete(data, current_user)
     begin
       data     = data.with_indifferent_access

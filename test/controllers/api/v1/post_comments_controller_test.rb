@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class AttendedEventTest < ActiveSupport::TestCase
+class Api::V1::PostCommentsControllerTest < ActionDispatch::IntegrationTest
   # test "the truth" do
   #   assert true
   # end

@@ -1,22 +1,19 @@
 class Event < ApplicationRecord
   include JsonBuilder
-
-  belongs_to :member_profile
-  # has_many :event_sports
-  # has_many :sports, through: :event_sports
-  # accepts_nested_attributes_for :event_sports
-
+  include PgSearch
+  
   @@limit           = 10
   @@current_profile = nil
-  include PgSearch
+  has_many   :posts
+  
   pg_search_scope :search_by_title,
-                  against: :description,
-                  using: {
-                      tsearch: {
-                          any_word: true,
-                          dictionary: "english"
-                      }
-                  }
+    against: :description,
+    using: {
+        tsearch: {
+            any_word: true,
+            dictionary: "english"
+        }
+    }
 
   def self.event_create(data, current_user)
     begin
@@ -48,7 +45,7 @@ class Event < ApplicationRecord
   def self.show_event(data, current_user)
     begin
       data  = data.with_indifferent_access
-      event = Event.find_by_id(data[:event][:id])
+      event = Event.find_by_id(data[:id])
       resp_data       = event_response(event)
       resp_status     = 1
       resp_message    = 'Event details'
@@ -63,68 +60,20 @@ class Event < ApplicationRecord
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
-
-  def self.event_search(data, current_user)
-    begin
-      data     = data.with_indifferent_access
-      per_page = (data[:per_page] || @@limit).to_i
-      page     = (data[:page] || 1).to_i
-
-      events   = Event.all
-      if data[:search][:keyword].present?
-        events  = events.where("lower(name) like ? OR lower(description) like ?", "%#{data[:search][:keyword]}%".downcase, "%#{data[:search][:keyword]}%".downcase)
-      end
-
-      if data[:search][:country_id].present?
-        events  = events.where('country_id = ?', data[:search][:country_id])
-      end
-
-      if data[:search][:state_id].present?
-        events  = events.where('state_id = ?', data[:search][:state_id])
-      end
-
-      # if data[:search][:sport_id].present?
-      #   event_records_ids = events.pluck(:id)
-      #   events            = Event.joins(:event_sports).where("event_sports.event_id IN (?) AND event_sports.sport_id = ?", event_records_ids, data[:search][:sport_id])
-      # end
-      #
-      # if data[:search][:sport_position_id].present?
-      #   event_records_ids = events.pluck(:id)
-      #   events            = Event.joins(:event_sports).where("event_sports.event_id IN (?) AND event_sports.sport_position_id = ?", event_records_ids, data[:search][:sport_position_id])
-      # end
-
-      if events.present?
-        events            = events.page(page.to_i).per_page(per_page.to_i)
-        paging_data       = JsonBuilder.get_paging_data(page, per_page, events)
-        resp_data       = {events: events}
-        resp_status     = 1
-        resp_message    = 'Event list'
-        resp_errors     = ''
-      else
-        resp_data       = ''
-        resp_status     = 0
-        paging_data     = nil
-        resp_message    = 'error'
-        resp_errors     = 'No Record found'
-      end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = nil
-      resp_message    = 'error'
-      resp_errors     = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  end
-
+  
   def self.event_list(data, current_user)
     begin
       data = data.with_indifferent_access
 
       per_page    = (data[:per_page] || @@limit).to_i
       page        = (data[:page] || 1).to_i
-      events      = Event.all.order('created_at DESC')
+      
+      events      = Event.all
+      if data[:search_key].present?
+        events  = events.where("lower(name) like ? ", "%#{data[:search_key]}%".downcase)
+      end
+      
+      events      = events.order('created_at DESC')
       events      = events.page(page.to_i).per_page(per_page.to_i)
       paging_data = JsonBuilder.get_paging_data(page, per_page, events)
 
@@ -133,7 +82,7 @@ class Event < ApplicationRecord
       resp_message    = 'Event List'
       resp_errors     = ''
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
@@ -145,21 +94,7 @@ class Event < ApplicationRecord
 
   def self.events_response(events)
     events = events.as_json(
-        only:    [:id, :name, :country_id, :state_id, :city_id, :organization, :location, :description, :cost, :currency_id, :camp_website, :start_date, :end_date, :upload, :member_profile_id, :created_at, :updated_at],
-        # include: {
-        #     event_sports: {
-        #         only:    [:id],
-        #         include: {
-        #             # sport:          {
-        #             #     only: [:id, :name]
-        #             # },
-        #             # sport_position: {
-        #             #     only: [:id, :name]
-        #             # }
-        #
-        #         }
-        #     }
-        # }
+        only:    [:id, :name, :location, :description, :start_date, :end_date]
     )
 
     { events: events }.as_json
@@ -167,12 +102,7 @@ class Event < ApplicationRecord
 
   def self.event_response(event)
     event = event.as_json(
-        only:    [:id, :name, :country_id, :state_id, :city_id, :organization, :location, :description, :cost, :currency_id, :camp_website, :start_date, :end_date, :upload, :member_profile_id, :created_at, :updated_at],
-        include: {
-            # sports: {
-            #     only: [:id, :name, :image_url]
-            # }
-        }
+        only:    [:id, :name, :country_id, :state_id, :city_id, :organization, :location, :description, :cost, :currency_id, :camp_website, :start_date, :end_date, :upload, :member_profile_id, :created_at, :updated_at]
     )
 
     events_array = []

@@ -25,10 +25,9 @@ class Api::V1::PostsController < ApplicationController
 
   def post_list
     # params ={
-    #   auth_token: "d3bb2b7b15943a3b013dbc3095d652e9c364cb0b75f53fa4dca5ccdcb2596a8af9d398d5d6bb5b58f4650f95bf1742a113c14e7624fb8170f604521a19170c96f23cdff5668e5b85c7177066d0aad445ad6776c103ab595fde7c21d9488b8681f3cbe9df",
+    #   auth_token: "cf18e0b778e02243cc3e3d4b01add1012a1d8862dfb9f7f5e51302b275c2b30a7dfc792ee6d362036bf1076d151c96896d4e85d2f48d5570769fd3a4fd2afa5c89c2b65cffe2cc5d93dc8f2e5841be2fcb1a136d68153b9e9a9990feca5d10d55026807e",
     #   "per_page": 10,
-    #   "page": 1,
-    #   "min_post_date": "2017-02-010 23:20:47 +0500 "
+    #   "min_post_date": "2017-03-23T04:51:19.020Z"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?

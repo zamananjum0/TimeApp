@@ -4,7 +4,7 @@ class PostJob < ApplicationJob
   def perform(response, user_ids, post_id=nil)
     users = []
     unless post_id
-      if user_ids.is_a? Fixnum
+      if user_ids.is_a? String
         users << "post_channel_#{user_ids}"
       else
         user_ids && user_ids.each do |user_id|

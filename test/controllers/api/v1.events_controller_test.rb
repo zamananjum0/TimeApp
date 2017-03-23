@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class MemberGroupContactTest < ActiveSupport::TestCase
+class Api::V1.eventsControllerTest < ActionDispatch::IntegrationTest
   # test "the truth" do
   #   assert true
   # end

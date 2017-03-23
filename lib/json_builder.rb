@@ -10,8 +10,6 @@ module JsonBuilder
     info[:paging_data]            = options[:paging_data]
     info[:type]                   = options[:type] if options[:type].present?
     info[:start]                  = options[:start] if options[:start].present?
-    info[:next_page_exist]        = options[:next_page_exist] if options[:post_list].present?
-    info[:previous_page_exist]    = options[:previous_page_exist] if options[:post_list].present?
     info[:request_id]             = request_id
 
     unless (json.to_s == "")
