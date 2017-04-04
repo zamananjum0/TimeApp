@@ -165,7 +165,7 @@ class MemberProfile < ApplicationRecord
     rescue Exception => e
       resp_data     = {}
       resp_status   = 0
-      paging_data   = ''
+      paging_data   = {}
       resp_message  = 'error'
       resp_errors   = e
     end
@@ -181,6 +181,14 @@ class MemberProfile < ApplicationRecord
           include: {
               user: {
                   only: [:id, :email, :username]
+              },
+              posts:{
+                  only:[:id],
+                  include:{
+                      post_attachments: {
+                          only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at]
+                      }
+                  }
               }
           }
       )
@@ -195,6 +203,14 @@ class MemberProfile < ApplicationRecord
           include: {
               user: {
                   only: [:id, :email, :username]
+              },
+              posts:{
+                  only:[:id],
+                  include:{
+                      post_attachments: {
+                          only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at]
+                      }
+                  }
               }
           }
       )

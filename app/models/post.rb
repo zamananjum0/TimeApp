@@ -10,7 +10,7 @@ class Post < ApplicationRecord
   has_many :recent_post_likes, -> { order(created_at: :desc).limit(5) }, class_name: 'PostLike'
   has_many :post_comments, dependent: :destroy
   has_many :recent_post_comments, -> { order(created_at: :desc).limit(5) }, class_name: 'PostComment'
-  
+  belongs_to :event
   accepts_nested_attributes_for :post_attachments, :post_members
   
   after_commit :process_hashtags
