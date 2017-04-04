@@ -186,7 +186,7 @@ class MemberProfile < ApplicationRecord
                   only:[:id],
                   include:{
                       post_attachments: {
-                          only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at]
+                          only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :width, :height]
                       }
                   }
               }
@@ -208,7 +208,7 @@ class MemberProfile < ApplicationRecord
                   only:[:id],
                   include:{
                       post_attachments: {
-                          only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at]
+                          only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :width, :height]
                       }
                   }
               }

@@ -48,7 +48,7 @@ class Post < ApplicationRecord
   end
 
   def self.post_create(data, current_user)
-     # begin
+    begin
       data = data.with_indifferent_access
       profile = current_user.profile
       post = profile.posts.build(data[:post])
@@ -70,13 +70,13 @@ class Post < ApplicationRecord
         resp_message    = 'You are exceeding your posts limit'
         resp_errors     = ''
       end
-    # rescue Exception => e
-    #   resp_data       = {}
-    #   resp_status     = 0
-    #   paging_data     = ''
-    #   resp_message    = 'error'
-    #   resp_errors     = e
-    # end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+    end
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
@@ -96,7 +96,7 @@ class Post < ApplicationRecord
             }
         },
         post_attachments: {
-            only: [:attachment_url, :thumbnail_url, :attachment_type]
+            only: [:attachment_url, :thumbnail_url, :attachment_type, :width, :height]
         },
         recent_post_comments: {
             only: [:id, :post_comment],
@@ -205,7 +205,7 @@ class Post < ApplicationRecord
                 }
             },
             post_attachments: {
-                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type]
+                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type, :width, :height]
             }
         }
     )
@@ -432,7 +432,7 @@ class Post < ApplicationRecord
                 }
             },
             post_attachments: {
-                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type]
+                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type, :width, :height]
             }
         }
     )
@@ -545,7 +545,7 @@ class Post < ApplicationRecord
     posts && posts.each do |post|
       member_profile   = post.member_profile
       post_attachments = post.post_attachments.as_json(
-          only: [:id, :attachment_url, :thumbnail_url, :attachment_type],
+          only: [:id, :attachment_url, :thumbnail_url, :attachment_type, :width, :height],
           include:{
               post_photo_users: {
                   only: [:id],
@@ -627,7 +627,7 @@ class Post < ApplicationRecord
   def self.other_member_profile_posts_response(posts, profile)
     @@current_profile = profile
     posts = posts.as_json(
-        only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
+        only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type],
         methods: [:likes_count, :comments_count, :liked_by_me],
         include: {
             member_profile: {
