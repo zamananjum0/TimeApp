@@ -51,7 +51,7 @@ class Comment < ApplicationRecord
                 only:    [:id, :photo],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name]
+                        only: [:id, :username]
                     }
                 }
             }
@@ -67,7 +67,7 @@ class Comment < ApplicationRecord
                 only: [:id, :photo],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name]
+                        only: [:id, :username]
                     }
                 }
             },
