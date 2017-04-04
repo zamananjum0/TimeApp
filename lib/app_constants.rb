@@ -10,4 +10,7 @@ module AppConstants
   PENDING           = 'pending'
   REJECTED          = 'rejected'
   TIMELINE          =  'TimeLine'
+  POST              = 'Post'
+  LIKED             = 'liked'
+  DISLIKED          = 'disliked'
 end

@@ -11,9 +11,9 @@ class PostLike < ApplicationRecord
       data                        = data.with_indifferent_access
       profile                     = current_user.profile
       post                        = Post.find_by_id(data[:post_id])
-      post_like                   = PostLike.find_by_post_id_and_member_profile_id(post.id, current_user.profile.id) || post.post_likes.build
+      post_like                   = PostLike.find_by_post_id_and_member_profile_id(post.id, current_user.profile.id) || post.likes.build
       post_like.member_profile_id = profile.id
-      post_like.like_status       = data[:is_like]
+      post_like.is_like           = data[:is_like]
       if post_like.save
         resp_data            = post_like_live(post_like)
         resp_status          = 1
@@ -49,7 +49,7 @@ class PostLike < ApplicationRecord
 
 
       post       = Post.find_by_id(data[:post][:id])
-      post_likes = post.post_likes.where(is_deleted: false, like_status: true)
+      post_likes = post.post_likes.where(is_deleted: false, is_like: true)
 
       if post_likes
 
@@ -113,7 +113,7 @@ class PostLike < ApplicationRecord
 
   def self.post_likes_response(post_likes_array)
     post_likes =  post_likes_array.as_json(
-        only:    [:id, :post_id, :like_status, :created_at, :updated_at],
+        only:    [:id, :post_id, :is_like, :created_at, :updated_at],
         include: {
             member_profile: {
                 only:    [:id, :photo],

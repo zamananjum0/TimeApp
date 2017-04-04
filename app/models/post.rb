@@ -4,12 +4,12 @@ class Post < ApplicationRecord
   include PgSearch
 
   belongs_to :member_profile
-  has_many :post_members, dependent: :destroy
-  has_many :post_attachments, dependent: :destroy
-  has_many :post_likes, dependent: :destroy
-  has_many :recent_post_likes, -> { order(created_at: :desc).limit(5) }, class_name: 'PostLike'
-  has_many :post_comments, dependent: :destroy
-  has_many :recent_post_comments, -> { order(created_at: :desc).limit(5) }, class_name: 'PostComment'
+  has_many   :post_members,     dependent: :destroy
+  has_many   :post_attachments, dependent: :destroy
+  has_many   :comments,         dependent: :destroy, as: :commentable
+  has_many   :likes,            dependent: :destroy, as: :likable
+  has_many   :recent_comments, -> { order(created_at: :desc).limit(10) }, class_name: 'Comment', as: :commentable
+  has_many   :recent_likes,    -> { order(created_at: :desc).limit(10) }, class_name: 'Like',    as: :likable
   belongs_to :event
   accepts_nested_attributes_for :post_attachments, :post_members
   
@@ -98,8 +98,8 @@ class Post < ApplicationRecord
         post_attachments: {
             only: [:attachment_url, :thumbnail_url, :attachment_type, :width, :height]
         },
-        recent_post_comments: {
-            only: [:id, :post_comment],
+        recent_comments: {
+            only: [:id, :comment],
             include: {
                 member_profile: {
                     only: [:id, :photo],
@@ -111,7 +111,7 @@ class Post < ApplicationRecord
                 }
             }
         },
-        recent_post_likes: {
+        recent_likes: {
             only: [:id],
             include: {
                 member_profile: {
@@ -165,8 +165,8 @@ class Post < ApplicationRecord
                     }
                 }
             },
-            recent_post_comments: {
-                only: [:id, :post_comment, :created_at, :updated_at],
+            recent_comments: {
+                only: [:id, :comment, :created_at, :updated_at],
                 include: {
                     member_profile: {
                         only: [:id, :photo],
@@ -178,7 +178,7 @@ class Post < ApplicationRecord
                     }
                 }
             },
-            recent_post_likes: {
+            recent_likes: {
                 only: [:id, :created_at, :updated_at],
                 include: {
                     member_profile: {
@@ -379,12 +379,12 @@ class Post < ApplicationRecord
   end
 
   def likes_count
-    self.post_likes.where(like_status: true, is_deleted: false).count
+    self.likes.where(is_like: true, is_deleted: false).count
   end
 
   def liked_by_me
-    post_like = self.post_likes.where(member_profile_id: @@current_profile.id).try(:first)
-    if post_like && post_like.like_status
+    post_like = self.likes.where(member_profile_id: @@current_profile.id).try(:first)
+    if post_like && post_like.is_like
       true
     else
       false
@@ -396,7 +396,7 @@ class Post < ApplicationRecord
   end
 
   def comments_count
-    self.post_comments.where(is_deleted: false).count
+    self.comments.where(is_deleted: false).count
   end
   
   def self.timeline_posts_array_response(posts, profile, current_user)
@@ -405,7 +405,7 @@ class Post < ApplicationRecord
         only: [:id, :post_title, :created_at, :updated_at],
         methods: [:likes_count,  :liked_by_me],
         include: {
-            recent_post_likes: {
+            recent_likes: {
                 only: [:id, :created_at, :updated_at],
                 include: {
                     member_profile: {
@@ -545,22 +545,7 @@ class Post < ApplicationRecord
     posts && posts.each do |post|
       member_profile   = post.member_profile
       post_attachments = post.post_attachments.as_json(
-          only: [:id, :attachment_url, :thumbnail_url, :attachment_type, :width, :height],
-          include:{
-              post_photo_users: {
-                  only: [:id],
-                  include:{
-                      member_profile:{
-                          only:[:id],
-                          include:{
-                              user:{
-                                  only: [:id, :first_name, :last_name]
-                              }
-                          }
-                      }
-                  }
-              }
-          }
+          only: [:id, :attachment_url, :thumbnail_url, :attachment_type, :width, :height]
       )
       posts_array << {
           type: "Post",
@@ -573,7 +558,7 @@ class Post < ApplicationRecord
           comments_count: post.post_comments.count,
           post_members_counts: post.post_members.count,
           liked_by_me: post.liked_by_me,
-          count: post.post_likes.where(like_status: true, is_deleted: false).count + post.post_comments.where(is_deleted: false).count,
+          count: post.post_likes.where(is_like: true, is_deleted: false).count + post.post_comments.where(is_deleted: false).count,
           member_profile: {
               id: member_profile.id,
               photo: member_profile.photo,
@@ -639,39 +624,11 @@ class Post < ApplicationRecord
                 }
             },
             post_attachments: {
-                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type],
-                include:{
-                    post_photo_users:{
-                        only:[:id, :member_profile_id],
-                        include: {
-                            member_profile: {
-                                only: [:id],
-                                include: {
-                                    user: {
-                                        only: [:id, :first_name, :last_name]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type]
             }
         }
     )
   end
-
-
-
-
-
-
-
-
-
-
-
-
-
 end
 
 # == Schema Information

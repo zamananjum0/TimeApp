@@ -301,7 +301,7 @@ class MemberProfile < ApplicationRecord
       per_page     = (data[:per_page] || @@limit).to_i
       page         = (data[:page] || 1).to_i
 
-      profile = current_user.profile
+      profile      = current_user.profile
       posts        = profile.posts
       if posts.present?
         posts         = posts.order("created_at DESC")

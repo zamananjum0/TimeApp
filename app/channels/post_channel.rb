@@ -4,6 +4,7 @@ class PostChannel < ApplicationCable::Channel
   def subscribed
     if params[:post_id].present?
       stream_from "post_#{params[:post_id]}"
+      sync_comments(current_user, params[:post_id], params[:session_id])
     elsif current_user.present?
       stream_from "post_channel_#{current_user.id}"
       newly_created_posts(current_user)
@@ -17,6 +18,17 @@ class PostChannel < ApplicationCable::Channel
     current_user.last_subscription_time = Time.now
     current_user.save!
     stop_all_streams
+  end
+
+  def sync_comments(current_user, object_id, session_id)
+    params = {user_id: current_user.id, media_id: object_id, media_type: AppConstants::POST}
+    open_session = OpenSession.find_by_user_id_and_media_id(current_user.id, object_id) || OpenSession.new(params)
+    open_session.session_id = session_id
+    open_session.save
+    data  = { post: { id: object_id } }
+    
+    response = Comment.comments_list(data, current_user, true, session_id)
+    PostJob.perform_later response, current_user.id
   end
 
   def post_create(data)
@@ -39,35 +51,28 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later response, current_user.id if response.present?
   end
 
-  def post_like(data)
-    response, resp_broadcast = PostLike.post_like(data, current_user)
+  def like(data)
+    response, resp_broadcast = Like.like(data, current_user)
     PostJob.perform_later response, current_user.id
     json_obj = JSON.parse(response)
-    post_id  = json_obj["data"]["post_like"]["post"]["id"]
-    PostJob.perform_later resp_broadcast, '', post_id
-  end
-
-  def post_comment(data)
-    response, broadcast_response = PostComment.post_comment(data, current_user)
-    PostJob.perform_later response, current_user.id
-    if broadcast_response.present?
-      json_obj = JSON.parse(response)
-      post_id  = json_obj["data"]["post_comments"][0]["post_id"]
-      PostJob.perform_later broadcast_response, '', post_id
+    if json_obj["message"] == AppConstants::LIKED
+      object_id   = json_obj['data']['like']['likable_id']
+      object_type = json_obj['data']['like']['likable_type']
+      Like.broadcast_like(resp_broadcast, object_id,  object_type)
     end
   end
 
-  def delete_post_comment(data)
-    response = PostComment.delete_post_comment(data, current_user)
+  def comment(data)
+    response, broadcast_response = Comment.comment(data, current_user)
     PostJob.perform_later response, current_user.id
+    if broadcast_response.present?
+      json_obj = JSON.parse(response)
+      object_id   = json_obj['data']['comments'][0]['commentable_id']
+      object_type = json_obj['data']['comments'][0]['commentable_type']
+      Comment.broadcast_comment(broadcast_response, object_id,  object_type)
+    end
   end
   
-  # def sync_post_likes(current_user, post_id)
-  #   data     = { post: { id: post_id } }
-  #   response = PostLike.post_likes_list(data, current_user, true)
-  #   PostJob.perform_later response, current_user.id
-  # end
-
   def sync_akn(data)
     response = Post.sync_ack(data, current_user)
     PostJob.perform_later response, current_user.id
