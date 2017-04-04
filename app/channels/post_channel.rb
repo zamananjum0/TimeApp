@@ -15,6 +15,10 @@ class PostChannel < ApplicationCable::Channel
   end
 
   def unsubscribed
+    if params[:post_id].present?
+      open_sessions = OpenSession.where(user_id: current_user.id, media_id: params[:post_id], media_type: AppConstants::POST)
+    end
+    open_sessions.destroy_all if open_sessions.present?
     current_user.last_subscription_time = Time.now
     current_user.save!
     stop_all_streams
