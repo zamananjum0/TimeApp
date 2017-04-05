@@ -115,6 +115,7 @@ class User < ApplicationRecord
     begin
       data         = data.with_indifferent_access
       user_session.session_status = 'closed'
+      user_session.auth_token     = nil
       user_session.save!
       user = user_session.user
       user.current_sign_in_at = nil

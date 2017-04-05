@@ -14,7 +14,7 @@ class Post < ApplicationRecord
   accepts_nested_attributes_for :post_attachments, :post_members
   
   after_commit :process_hashtags
-  @@limit = 1
+  @@limit = 10
   @@current_profile = nil
   
   pg_search_scope :search_by_title,
@@ -298,12 +298,13 @@ class Post < ApplicationRecord
       last_subs_date = current_user.last_subscription_time
       profile = current_user.profile
 
-      following_ids   = profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
-      post_ids        = PostMember.where(member_profile_id: profile.id).pluck(:post_id)
-      following_ids   << profile.id
-      member_ids   = following_ids.flatten.uniq
-      posts        = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", member_ids, post_ids, false).distinct
-
+      # following_ids   = profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
+      # post_ids        = PostMember.where(member_profile_id: profile.id).pluck(:post_id)
+      # following_ids   << profile.id
+      # member_ids   = following_ids.flatten.uniq
+      # posts        = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", member_ids, post_ids, false).distinct
+      #   Temporarily
+      posts = Post.all
       if current_user.current_sign_in_at.blank? && last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.synced_datetime.present?
           posts = posts.where("created_at > ?", current_user.synced_datetime)
