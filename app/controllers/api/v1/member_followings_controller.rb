@@ -46,4 +46,5 @@ class Api::V1::MemberFollowingsController < ApplicationController
       return render json: resp_data
     end
   end
+  
 end

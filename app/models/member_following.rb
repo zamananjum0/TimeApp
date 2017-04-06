@@ -261,36 +261,36 @@ class MemberFollowing < ApplicationRecord
           member_profile:{
               id:               profile.id,
               photo:            profile.photo,
-              gender:           profile.gender,
-              dob:              profile.dob,
               is_im_following:  is_current_user_following ? true : false,
               is_my_follower:   is_current_user_follower  ? true : false,
 
               user:{
                   id:           user.id,
-                  first_name:   user.first_name,
-                  last_name:    user.last_name,
+                  username:     user.username,
                   email:        user.email
               }
           }
       }
 
     end
-    is_current_user_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(current_user.profile.id, searched_profile.id, ACCEPTED,false)
-    is_current_user_follower  =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(searched_profile.id, current_user.profile.id, ACCEPTED,false)
+    
+    if current_user.profile_id != searched_profile.id
+      is_current_user_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(current_user.profile.id, searched_profile.id, ACCEPTED,false)
+      is_current_user_follower  =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(searched_profile.id, current_user.profile.id, ACCEPTED,false)
+    else
+      is_current_user_following = false
+      is_current_user_follower  = false
+    end
+    searched_user = searched_profile.user
     profile = {
         id:               searched_profile.id,
         photo:            searched_profile.photo,
-        gender:           searched_profile.gender,
-        dob:              searched_profile.dob,
         is_im_following:  is_current_user_following ? true : false,
         is_my_follower:   is_current_user_follower  ? true : false,
-
         user:{
-            id:            searched_profile.user.id,
-            first_name:    searched_profile.user.first_name,
-            last_name:     searched_profile.user.last_name,
-            email:         searched_profile.user.email
+            id:            searched_user.id,
+            username:      searched_user.username,
+            email:         searched_user.email
         }
     }
     if root_status.present?
@@ -314,7 +314,7 @@ class MemberFollowing < ApplicationRecord
     end
   end
 
-  def self.get_following_requests(data, current_user)
+  def self.get_following_pending_requests(data, current_user)
     begin
       data = data.with_indifferent_access
       per_page = (data[:per_page] || @@limit).to_i

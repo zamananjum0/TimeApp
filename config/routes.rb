@@ -28,10 +28,10 @@ Rails.application.routes.draw do
         collection do
           get 'get_following_requests'
           get 'get_followers_requests'
-          get 'profile_timeline'
           get 'get_followers'
+          get 'get_followings'
+          get 'profile_timeline'
           get 'accepted_rejected_follower'
-          get 'get_following_members'
           get 'get_profile'
           put 'profile_update'
         end
