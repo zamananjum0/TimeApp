@@ -14,7 +14,10 @@ class Event < ApplicationRecord
             dictionary: "english"
         }
     }
-
+  def post_count
+    self.posts.count
+  end
+  
   def self.event_create(data, current_user)
     begin
       data    = data.with_indifferent_access
@@ -69,6 +72,10 @@ class Event < ApplicationRecord
       page        = (data[:page] || 1).to_i
       
       events      = Event.all
+      if data[:start_date].present? && data[:end_date].present?
+        events    = Event.where('start_date >= ? AND end_date <= ?', data[:start_date], data[:end_date])
+      end
+      
       if data[:search_key].present?
         events  = events.where("lower(name) like ? ", "%#{data[:search_key]}%".downcase)
       end
@@ -94,7 +101,8 @@ class Event < ApplicationRecord
 
   def self.events_response(events)
     events = events.as_json(
-        only:    [:id, :name, :location, :description, :start_date, :end_date]
+        only:    [:id, :name, :location, :description, :start_date, :end_date, :is_deleted],
+        methods: [:post_count],
     )
 
     { events: events }.as_json
@@ -102,7 +110,7 @@ class Event < ApplicationRecord
 
   def self.event_response(event)
     event = event.as_json(
-        only:    [:id, :name, :country_id, :state_id, :city_id, :organization, :location, :description, :cost, :currency_id, :camp_website, :start_date, :end_date, :upload, :member_profile_id, :created_at, :updated_at]
+        only:    [:id, :name, :start_date, :end_date, :is_deleted]
     )
 
     events_array = []

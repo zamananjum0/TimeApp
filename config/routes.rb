@@ -36,26 +36,38 @@ Rails.application.routes.draw do
           put 'profile_update'
         end
       end
-      resources :events
-      resources :posts do
+      resources :events do
         collection do
-          get 'discover'
-          get 'related_posts'
+          get  'event_posts'
+          post 'block_event'
+        end
+      end
+      resources :posts, only: [:index, :destroy] do
+        collection do
           get 'post_list'
           get 'post_likes_list'
           get 'post_comments_list'
-          get 'auto_complete'
         end
       end
-      resources :post_comments
+      resources :comments
       resources :member_followings do
         collection do
-          get 'search_member'
+          get  'search_member'
           post 'follow_member'
           post 'unfollow_member'
         end
       end
       
+      # Routes for web
+      resources :dashboards, only:[:index]
+      resources :users, only:[:index] do
+        collection do
+          get 'user_posts'
+          get 'user_followers'
+          post 'block_user'
+        end
+      end
+      resources :likes, only: [:index]
     end
   end
 

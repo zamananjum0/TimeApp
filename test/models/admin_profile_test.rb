@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class Api::V1::PostCommentsControllerTest < ActionDispatch::IntegrationTest
+class AdminProfileTest < ActiveSupport::TestCase
   # test "the truth" do
   #   assert true
   # end

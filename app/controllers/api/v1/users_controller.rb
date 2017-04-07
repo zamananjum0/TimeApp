@@ -1,76 +1,98 @@
 class Api::V1::UsersController < Api::V1::ApiProtectedController
-
-  api :POST, "/v1/users/get_users_list.json", "Admin Get Users"
-  formats ['json', 'xml']
-  example <<-EOS
-        Request:
-        {
-          "user_session":{
-            "token": "454-545-45-45-454"
-          }
+  
+  # calling from web
+  def index
+    member_profiles =  MemberProfile.all
+    member_profiles =  member_profiles.page(params[:page].to_i).per_page(params[:per_page].to_i)
+    paging_data     = get_paging_data(params[:page], params[:per_page], member_profiles)
+    member_profiles =  member_profiles.as_json(
+        only: [:id, :photo, :is_profile_public],
+        methods: [:posts_count, :followings_count, :followers_count],
+        include: {
+            user: {
+                only: [:id, :profile_id, :profile_type, :email, :username, :is_deleted]
+            }
         }
-        Response:
-        {
-          "resp_status":"1",
-          "message":"Error",
-          "errors":"nil",
-          "paging_data":"nil",
-          "request_id":
-            {
-              "errors":"User token is expired or does not exist",
-               "paging_data":"nil"
-            },
-              "data":[
-                {
-                  "id":"1",
-                  "email":"ferhan123@gmail.com",
-                  "full_name":"fer",
-                  "username":"ferhan"
-                },
-                {
-                  "id":"2",
-                  "email":"fani@gmail.com",
-                  "full_name":"fer",
-                  "username":"ferhan"
-                }
-                     ]
-        }
-  EOS
-
-
-  def get_users_list
-    per_page = (params[:per_page] || @@limit).to_i
-    page     = (params[:page] || 1).to_i
-
-    users        =User.where(profile_type: "MemberProfile", is_deleted: false)
-    users        = users.page(page.to_i).per_page(per_page.to_i)
-    resp_data    = user_response(users)
-    paging_data  = get_paging_data(page, per_page, users)
+    )
+    resp_data    = {member_profiles: member_profiles}.as_json
     resp_status  = 1
     resp_message = 'Success'
     resp_errors  = ''
-
     common_api_response(resp_data, resp_status, resp_message, resp_errors, paging_data)
   end
-
-
-  def user_response(users_array)
-    users_array.as_json(
-        only: [:id, :username, :email, :full_name]
-    )
+  
+  # calling from web
+  def user_posts
+    member_profile = MemberProfile.find_by_id(params[:member_profile_id])
+    if member_profile.present?
+      posts        =  member_profile.posts
+      posts        =  posts.page(params[:page].to_i).per_page(params[:per_page].to_i)
+      paging_data  =  get_paging_data(params[:page], params[:per_page], posts)
+      resp_data    =  Post.posts_array_response(posts, member_profile)
+      resp_status  = 1
+      resp_message = 'Success'
+      resp_errors  = ''
+    else
+      paging_data  = ''
+      resp_data    = {}
+      resp_status  = 0
+      resp_message = 'error'
+      resp_errors  = 'User not found'
+    end
+    common_api_response(resp_data, resp_status, resp_message, resp_errors, paging_data)
   end
-
-  def destroy
-    user           = User.find_by_id(params[:id])
-    user.is_deleted= true
-    user.save!
-    resp_data    = ''
-    resp_status  = 1
-    resp_message = 'Success'
-    resp_errors  = ''
-
+  
+  # calling from web
+  def user_followers
+    member_profile = MemberProfile.find_by_id(params[:member_profile_id])
+    if member_profile.present?
+      member_followers =  MemberFollowing.where(following_profile_id: member_profile.id)
+      member_followers =  member_followers.page(params[:page].to_i).per_page(params[:per_page].to_i)
+      paging_data      =  get_paging_data(params[:page], params[:per_page], member_followers)
+      member_followers =  member_followers.as_json(
+          only: [:id, :following_status],
+          include:{
+              member_profile:{
+                  only:[:id],
+                  include:{
+                      user:{
+                          only:[:id, :email, :username]
+                      }
+                  }
+              }
+          }
+      )
+      resp_data    =  {member_followers: member_followers}.as_json
+      resp_status  = 1
+      resp_message = 'Success'
+      resp_errors  = ''
+    else
+      paging_data  = ''
+      resp_data    = {}
+      resp_status  = 0
+      resp_message = 'error'
+      resp_errors  = 'User not found'
+    end
+    common_api_response(resp_data, resp_status, resp_message, resp_errors, paging_data)
+  end
+  
+  # Call from web
+  def block_user
+    user = User.find_by_id(params[:user_id])
+    if user.present?
+      user.is_deleted = params[:is_block]
+      user.save!
+      resp_data    =  {}
+      resp_status  = 1
+      resp_message = 'Success'
+      resp_errors  = ''
+    else
+      resp_data    =  {}
+      resp_status  = 0
+      resp_message = 'error'
+      resp_errors  = 'User not found.'
+    end
     common_api_response(resp_data, resp_status, resp_message, resp_errors)
   end
-
-
+  
 end

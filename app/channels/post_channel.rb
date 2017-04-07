@@ -45,10 +45,10 @@ class PostChannel < ApplicationCable::Channel
     end
   end
 
-  def post_destroy(data)
-    response = Post.post_destroy(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
+  # def post_destroy(data)
+  #   response = Post.post_destroy(data, current_user)
+  #   PostJob.perform_later response, current_user.id
+  # end
   
   def newly_created_posts(current_user)
     response = Post.newly_created_posts(current_user)

@@ -93,30 +93,12 @@ class Like < ApplicationRecord
     end
   end
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
   def self.post_likes_list(data, current_user, sync=nil)
     begin
       data       = data.with_indifferent_access
       per_page   = (data[:per_page] || @@limit).to_i
       page       = (data[:page] || 1).to_i
-      post       = Post.find_by_id(data[:post][:id])
+      post       = Post.find_by_id(data[:post_id])
       post_likes = post.likes.where(is_deleted: false, is_like: true)
       
       if post_likes
@@ -154,15 +136,15 @@ class Like < ApplicationRecord
     end
   end
   
-  def self.post_likes_response(post_likes_array)
+  def self. post_likes_response(post_likes_array)
     post_likes =  post_likes_array.as_json(
         only:    [:id, :post_id, :is_like, :created_at, :updated_at],
         include: {
             member_profile: {
-                only:    [:id, :photo, :country_id, :is_profile_public, :gender],
+                only:    [:id, :photo],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name]
+                        only: [:id, :username, :email]
                     }
                 }
             }

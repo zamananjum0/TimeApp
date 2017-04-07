@@ -13,7 +13,7 @@ class Post < ApplicationRecord
   belongs_to :event
   accepts_nested_attributes_for :post_attachments, :post_members
   
-  after_commit :process_hashtags
+  # after_commit :process_hashtags
   @@limit = 10
   @@current_profile = nil
   
@@ -26,8 +26,7 @@ class Post < ApplicationRecord
         }
     }
 
-
-
+  
   def process_hashtags
     arr = []
     hashtag_regex, current_user = /\B#\w\w+/
@@ -83,8 +82,8 @@ class Post < ApplicationRecord
 
   def post_response
     post = self.as_json(
-        only: [:id, :post_title, :post_description],
-        methods: [:likes_count],
+        only: [:id, :post_title, :event_id, :post_description],
+        methods: [:likes_count, :comments_count],
         include: {
             member_profile: {
                 only: [:id, :photo],
@@ -94,6 +93,9 @@ class Post < ApplicationRecord
                     }
                 }
             }
+        },
+        event:{
+            only:[:id, :name]
         },
         post_attachments: {
             only: [:attachment_url, :thumbnail_url, :attachment_type, :width, :height]
@@ -154,8 +156,8 @@ class Post < ApplicationRecord
   def self.posts_array_response(post_array, profile, sync_token=nil)
     @@current_profile = profile
     posts = post_array.as_json(
-        only: [:id, :post_title, :created_at, :updated_at],
-        methods: [:likes_count, :liked_by_me],
+        only: [:id, :post_title,  :event_id, :created_at, :updated_at, :is_deleted],
+        methods: [:likes_count, :liked_by_me, :comments_count],
         include: {
             member_profile: {
                 only: [:id, :photo],
@@ -164,6 +166,9 @@ class Post < ApplicationRecord
                         only: [:id, :username, :email]
                     }
                 }
+            },
+            event:{
+              only:[:id, :name]
             },
             recent_comments: {
                 only: [:id, :comment, :created_at, :updated_at],
@@ -404,7 +409,7 @@ class Post < ApplicationRecord
     @@current_profile = profile
     posts = posts.as_json(
         only: [:id, :post_title, :created_at, :updated_at],
-        methods: [:likes_count,  :liked_by_me],
+        methods: [:likes_count,  :liked_by_me, :comments_count],
         include: {
             recent_likes: {
                 only: [:id, :created_at, :updated_at],
@@ -450,83 +455,6 @@ class Post < ApplicationRecord
     {posts: posts, member_profile: member_profile}.as_json
   end
 
-  def self.discover(data, current_user)
-    begin
-      data = data.with_indifferent_access
-
-      per_page = (data[:per_page] || @@limit).to_i
-      page = (data[:page] || 1).to_i
-
-    if data[:search][:key].present?
-      search_key = data[:search][:key]
-
-      posts     = Post.search_by_title(search_key)
-      users     = User.search_by_title(search_key)
-      hash_tags = Hashtag.search_by_title(search_key)
-      if posts.present? || users.present? || hash_tags.present?
-        paging_data, resp_data = discover_search_new(posts, users, hash_tags, page, per_page, data[:search][:type], current_user)
-        resp_status = 1
-        resp_message = 'Discover list'
-        resp_errors = ''
-      else
-        resp_data    = ''
-        resp_status  = 0
-        resp_message = 'error'
-        resp_errors  = 'No Record found'
-        paging_data  = ''
-      end
-    else
-      resp_data    = ''
-      resp_status  = 0
-      resp_message = 'error'
-      resp_errors  = 'No Key found'
-      paging_data  = ''
-    end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  end
-
-  def self.discover_search_new(posts, users, hash_tags, page, per_page, type, current_user)
-    larger_array_type = ''
-
-    if type.blank? || type == 'Member'
-      profile_ids     = users.pluck(:profile_id)
-      member_profiles = MemberProfile.where(id: profile_ids)
-      member_profiles = member_profiles.page(page.to_i).per_page(per_page.to_i)
-    end
-
-    if type.blank? || type == 'Post'
-      posts = posts.page(page.to_i).per_page(per_page.to_i)
-    end
-
-    if type.blank? || type == 'Hashtag'
-      hash_tags = hash_tags.page(page.to_i).per_page(per_page.to_i)
-    end
-
-    if type.present?
-      larger_array_type = type
-    else
-      if member_profiles.count > posts.count || member_profiles.count > hash_tags.count
-        larger_array_type = 'Member'
-      elsif posts.count > member_profiles.count || posts.count > hash_tags.count
-        larger_array_type = 'Post'
-      elsif hash_tags.count > member_profiles.count || hash_tags.count > posts.count
-        larger_array_type = 'Hashtag'
-      end
-    end
-
-    paging_data = JsonBuilder.get_paging_data(page, per_page, paging_records(member_profiles, posts, hash_tags, larger_array_type))
-    resp_data = trending_api_loop_response(posts, hash_tags, true, current_user, member_profiles)
-    [paging_data, resp_data]
-  end
-
   def self.paging_records(member_profiles, posts, hash_tags, larger_array_type)
     if larger_array_type == 'Member'
       member_profiles
@@ -536,100 +464,7 @@ class Post < ApplicationRecord
       hash_tags
     end
   end
-
-  def self.trending_api_loop_response(posts, hash_tags, status, current_user, member_profiles=nil)
-    @@current_profile = current_user.profile
-    resp_array = []
-    posts_array = []
-    hash_tags_array = []
-    profiles_array = []
-    posts && posts.each do |post|
-      member_profile   = post.member_profile
-      post_attachments = post.post_attachments.as_json(
-          only: [:id, :attachment_url, :thumbnail_url, :attachment_type, :width, :height]
-      )
-      posts_array << {
-          type: "Post",
-          id: post.id,
-          post_title: post.post_title,
-          post_description: post.post_description,
-          is_post_public: post.is_post_public,
-          post_type: post.post_type,
-          likes_count: post.post_likes.count,
-          comments_count: post.post_comments.count,
-          post_members_counts: post.post_members.count,
-          liked_by_me: post.liked_by_me,
-          count: post.post_likes.where(is_like: true, is_deleted: false).count + post.post_comments.where(is_deleted: false).count,
-          member_profile: {
-              id: member_profile.id,
-              photo: member_profile.photo,
-              gender: member_profile.gender,
-              user: {
-                  id: member_profile.user.id,
-                  first_name: member_profile.user.first_name,
-                  last_name: member_profile.user.last_name
-              }
-          },
-          post_attachments:  post_attachments
-      }
-    end
-
-    # Hashtag
-    hash_tags && hash_tags.each do |hash_tag|
-      hash_tags_array << {
-          type: "HashTag",
-          id: hash_tag.id,
-          name: hash_tag.name,
-          count: hash_tag.count
-      }
-    end
-
-    if status.present?
-      member_profiles && member_profiles.each do |profile|
-        profiles_array << {
-            type: "MemberProfile",
-            id: profile.id,
-            photo: profile.photo,
-            user: {
-                id: profile.user.id,
-                first_name: profile.user.first_name,
-                last_name: profile.user.last_name,
-            }
-        }
-      end
-      resp_array << profiles_array
-      resp_array << posts_array
-      resp_array << hash_tags_array
-      response = resp_array.flatten
-      {dicsover_list: response}.as_json
-    else
-      resp_array << posts_array.take(5)
-      resp_array << hash_tags_array.take(2)
-      response = resp_array.flatten.sort_by { |hsh| hsh[:count] }.reverse
-      {trending_list: response}.as_json
-    end
-  end
-
-  def self.other_member_profile_posts_response(posts, profile)
-    @@current_profile = profile
-    posts = posts.as_json(
-        only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type],
-        methods: [:likes_count, :comments_count, :liked_by_me],
-        include: {
-            member_profile: {
-                only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender],
-                include: {
-                    user: {
-                        only: [:id, :first_name, :last_name]
-                    }
-                }
-            },
-            post_attachments: {
-                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type]
-            }
-        }
-    )
-  end
+  
 end
 
 # == Schema Information
