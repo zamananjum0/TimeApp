@@ -110,7 +110,7 @@ class Event < ApplicationRecord
 
   def self.event_response(event)
     event = event.as_json(
-        only:    [:id, :name, :start_date, :end_date, :is_deleted]
+        only:    [:id, :name, :location, :start_date, :end_date, :is_deleted]
     )
 
     events_array = []

@@ -13,7 +13,7 @@ class Api::V1::EventsController < Api::V1::ApiProtectedController
       resp_data  =  Event.event_list(params, user_session.user)
       render json: resp_data
     else
-      resp = {resp_data: {}, status: 0, message: 'error'}
+      resp = {resp_data: {}, resp_status: 0, resp_message: 'error'}
       return render json: resp
     end
   end
@@ -25,7 +25,7 @@ class Api::V1::EventsController < Api::V1::ApiProtectedController
       resp_data  =   Event.show_event(params, user_session.user)
       render json: resp_data
     else
-      resp = {resp_data: {}, status: 0, message: 'error'}
+      resp = {resp_data: {}, resp_status: 0, resp_message: 'error'}
       return render json: resp
     end
   end
@@ -61,5 +61,33 @@ class Api::V1::EventsController < Api::V1::ApiProtectedController
         resp_errors  = 'Event not found.'
       end
       common_api_response(resp_data, resp_status, resp_message, resp_errors)
+  end
+  
+  def create
+    event = Event.new(event_params)
+    if event.save
+      resp = {resp_data: {}, resp_status: 1, resp_message: 'success'}
+      return render json: resp
+    else
+      resp = {resp_data: {}, resp_status: 0, resp_message: 'error'}
+      return render json: resp
     end
+  end
+
+  def update
+    event = Event.find_by_id(params[:id])
+    if event.update_attributes(event_params)
+      resp = {resp_data: {}, resp_status: 1, resp_message: 'success'}
+      return render json: resp
+    else
+      resp = {resp_data: {}, resp_status: 0, resp_message: 'error'}
+      return render json: resp
+    end
+  end
+ 
+  
+  private
+  def event_params
+    params.require(:event).permit(:name, :location, :start_date, :end_date)
+  end
 end
