@@ -284,9 +284,9 @@ class MemberProfile < ApplicationRecord
       data         = data.with_indifferent_access
       per_page     = (data[:per_page] || @@limit).to_i
       page         = (data[:page] || 1).to_i
-
-      profile      = current_user.profile
-      posts        = profile.posts
+      
+      profile      = MemberProfile.find_by_id(data[:member_profile_id])
+      posts        = profile.posts if profile.present?
       if posts.present?
         posts         = posts.order("created_at DESC")
         posts         = posts.page(page.to_i).per_page(per_page.to_i)

@@ -62,7 +62,7 @@ class PostChannel < ApplicationCable::Channel
     if json_obj["message"] == AppConstants::LIKED
       object_id   = json_obj['data']['like']['likable_id']
       object_type = json_obj['data']['like']['likable_type']
-      Like.broadcast_like(resp_broadcast, object_id,  object_type)
+      Like.broadcast_like(resp_broadcast, object_id, object_type)
     end
   end
 
