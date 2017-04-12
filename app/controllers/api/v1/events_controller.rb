@@ -90,10 +90,10 @@ class Api::V1::EventsController < Api::V1::ApiProtectedController
 
   # Call from app
   def global_winners
-    params = {
-        "auth_token": UserSession.last.auth_token,
-        # "max_event_date": end_date
-    }
+    # params = {
+    #     "auth_token": UserSession.last.auth_token,
+    #     # "max_event_date": end_date
+    # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
       resp_data  =  Event.global_winners(params, user_session.user)
