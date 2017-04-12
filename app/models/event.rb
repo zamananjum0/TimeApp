@@ -153,27 +153,32 @@ class Event < ApplicationRecord
   def self.leader_winners(data, current_user)
     begin
       data = data.with_indifferent_access
-      max_event_date = data[:max_event_date] || Time.now
-      min_event_date = data[:min_event_date] || Time.now
+      max_event_date = data[:max_event_date] || DateTime.now
+      min_event_date = data[:min_event_date] || DateTime.now
     
       if data[:max_event_date].present?
-        events  = Event.where('end_date > ? AND end_date < ?', max_event_date, Time.now).order('end_date DESC')
+        events  = Event.where('end_date > ? AND end_date < ?', max_event_date, DateTime.now)
       elsif data[:min_event_date].present?
-        events  = Event.where('end_date < ?', min_event_date).order('end_date DESC')
+        events  = Event.where('end_date < ?', min_event_date)
       else
-        events  = Event.where('end_date < ?', Date.today).order('end_date DESC')
+        events  = Event.where('end_date < ?', DateTime.now)
       end
-    
+      
+      following_ids = current_user.profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted: false).pluck(:following_profile_id)
+      events = events.joins(:posts).where(posts:{member_profile_id: following_ids, is_deleted: false})
+
+      events = events.order("end_date DESC")
+      events = events.limit(@@limit)
+
       if events.present?
-        Event.where("end_date > ? AND end_date < ?", events.first.end_date, Time.now).present? ? previous_page_exist = true : previous_page_exist = false
-        Event.where("end_date < ?", last_event_date).present? ? next_page_exist = true : next_page_exist = false
+        Event.where("end_date > ? AND end_date < ?", events.first.end_date, DateTime.now).present? ? previous_page_exist = true : previous_page_exist = false
+        Event.where("end_date < ?", events.last.end_date).present? ? next_page_exist = true : next_page_exist = false
       end
-    
+      
       paging_data = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
-    
-      resp_data   = winners_response(posts)
+      resp_data   = winners_response(events)
       resp_status = 1
-      resp_message = 'Post list'
+      resp_message = 'Event list'
       resp_errors = ''
     rescue Exception => e
       resp_data       = {}

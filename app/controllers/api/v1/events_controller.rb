@@ -108,7 +108,7 @@ class Api::V1::EventsController < Api::V1::ApiProtectedController
   def leaderboard_winners
     # params = {
     #     "auth_token": UserSession.last.auth_token,
-    #     "max_event_date": end_date
+    #     "min_event_date": "2017-04-07T13:42:00.617Z"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
