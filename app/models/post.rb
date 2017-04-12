@@ -92,35 +92,35 @@ class Post < ApplicationRecord
                         only: [:id, :username, :email]
                     }
                 }
-            }
-        },
-        event:{
-            only:[:id, :name]
-        },
-        post_attachments: {
-            only: [:attachment_url, :thumbnail_url, :attachment_type, :width, :height]
-        },
-        recent_comments: {
-            only: [:id, :comment],
-            include: {
-                member_profile: {
-                    only: [:id, :photo],
-                    include: {
-                        user: {
-                            only: [:id, :username, :email]
+            },
+            event:{
+                only:[:id, :name]
+            },
+            post_attachments: {
+                only: [:attachment_url, :thumbnail_url, :attachment_type, :width, :height]
+            },
+            recent_comments: {
+                only: [:id, :comment],
+                include: {
+                    member_profile: {
+                        only: [:id, :photo],
+                        include: {
+                            user: {
+                                only: [:id, :username, :email]
+                            }
                         }
                     }
                 }
-            }
-        },
-        recent_likes: {
-            only: [:id],
-            include: {
-                member_profile: {
-                    only: [:id, :photo],
-                    include: {
-                        user: {
-                            only: [:id, :username, :email]
+            },
+            recent_likes: {
+                only: [:id],
+                include: {
+                    member_profile: {
+                        only: [:id, :photo],
+                        include: {
+                            user: {
+                                only: [:id, :username, :email]
+                            }
                         }
                     }
                 }
