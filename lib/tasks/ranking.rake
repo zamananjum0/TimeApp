@@ -3,7 +3,10 @@ task :define_ranking => :environment do
   events  = Event.where('end_date < ?', DateTime.now).order('end_date DESC')
   events && events.each do |event|
     post =  Post.joins(:likes).select("posts.*, COUNT('likes.id') likes_count").where(likes: {likable_type: 'Post', is_like: true}, event_id: event.id).group('posts.id').order('likes_count DESC').try(:first)
-    event.post_id = post.id
-    event.save!
+    if post.present?
+      event.post_id           = post.id
+      event.winner_profile_id = post.member_profile_id
+      event.save!
+    end
   end
 end

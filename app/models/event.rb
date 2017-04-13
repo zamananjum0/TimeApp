@@ -163,9 +163,10 @@ class Event < ApplicationRecord
       else
         events  = Event.where('end_date < ?', DateTime.now)
       end
+      events = events.where('post_id IS NOT NULL')
       
       following_ids = current_user.profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted: false).pluck(:following_profile_id)
-      events = events.joins(:posts).where(posts:{member_profile_id: following_ids, is_deleted: false})
+      events = events.where(winner_profile_id: following_ids)
 
       events = events.order("end_date DESC")
       events = events.limit(@@limit)
