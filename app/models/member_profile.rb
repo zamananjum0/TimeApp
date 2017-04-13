@@ -263,15 +263,15 @@ class MemberProfile < ApplicationRecord
   end
 
   def followings_count
-    self.member_followings.where(following_status: AppConstants::ACCEPTED).count
+    self.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted: false).count
   end
 
   def followers_count
-    MemberFollowing.where(following_profile_id: self.id, following_status: AppConstants::ACCEPTED).count
+    MemberFollowing.where(following_profile_id: self.id, following_status: AppConstants::ACCEPTED, is_deleted: false).count
   end
 
   def is_my_follower
-    member_followers = MemberFollowing.where(following_status: AppConstants::ACCEPTED, member_profile_id: self.id, following_profile_id: @@current_profile.id)
+    member_followers = MemberFollowing.where(following_status: AppConstants::ACCEPTED, member_profile_id: self.id, following_profile_id: @@current_profile.id, is_deleted: false)
     if member_followers.present?
       true
     else
