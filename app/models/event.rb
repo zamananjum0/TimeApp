@@ -68,9 +68,8 @@ class Event < ApplicationRecord
   def self.event_list(data, current_user)
     begin
       data = data.with_indifferent_access
-
-      per_page    = (data[:per_page] || @@limit).to_i
-      page        = (data[:page] || 1).to_i
+      max_event_date = data[:max_event_date] || DateTime.now
+      min_event_date = data[:min_event_date] || DateTime.now
       
       events      = Event.all
       if data[:start_date].present? && data[:end_date].present?
@@ -80,11 +79,21 @@ class Event < ApplicationRecord
       if data[:search_key].present?
         events  = events.where("lower(name) like ? ", "%#{data[:search_key]}%".downcase)
       end
-      
-      events      = events.order('created_at DESC')
-      events      = events.page(page.to_i).per_page(per_page.to_i)
-      paging_data = JsonBuilder.get_paging_data(page, per_page, events)
 
+      if data[:max_event_date].present?
+        events = events.where("created_at > ?", max_event_date)
+      elsif data[:min_event_date].present?
+        events = events.where("created_at < ?", min_event_date)
+      end
+      events = events.order("created_at DESC")
+      events = events.limit(@@limit)
+
+      if events.present?
+        Event.where("created_at > ?", events.first.created_at).present? ? previous_page_exist = true : previous_page_exist = false
+        Event.where("created_at < ?", events.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+      end
+      
+      paging_data = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
       resp_data       = events_response(events)
       resp_status     = 1
       resp_message    = 'Event List'
@@ -194,7 +203,7 @@ class Event < ApplicationRecord
 
   def self.events_response(events)
     events = events.as_json(
-        only:    [:id, :name, :location, :description, :start_date, :end_date],
+        only:    [:id, :name, :location, :description, :start_date, :end_date, :created_at, :updated_at],
         methods: [:post_count],
     )
 
@@ -239,6 +248,4 @@ class Event < ApplicationRecord
   
     { events: events }.as_json
   end
-
-
 end
