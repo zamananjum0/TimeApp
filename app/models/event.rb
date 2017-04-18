@@ -182,7 +182,7 @@ class Event < ApplicationRecord
 
       if events.present?
         Event.where("end_date > ? AND end_date < ?", events.first.end_date, DateTime.now).present? ? previous_page_exist = true : previous_page_exist = false
-        Event.where("end_date < ?", events.last.end_date).present? ? next_page_exist = true : next_page_exist = false
+        Event.where("end_date < ? AND winner_profile_id IN (?)", events.last.end_date, following_ids).present? ? next_page_exist = true : next_page_exist = false
       end
       
       paging_data = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
