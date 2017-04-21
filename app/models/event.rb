@@ -30,16 +30,22 @@ class Event < ApplicationRecord
     text_hashtags_title = hash_tag.scan(hashtag_regex) if hash_tag.present?
     arr << text_hashtags_title
     tags = (arr.flatten).uniq
+    ids = []
     tags.each do |ar|
       tag = Hashtag.find_by_name(ar)
       if tag.present?
         tag.count = tag.count+1
         tag.save!
       else
-        hash_tag = Hashtag.create!(name: ar)
-        EventTag.create!(event_id: self.id, hashtag_id: hash_tag.id)
+        tag = Hashtag.create!(name: ar)
       end
+      event_tag = EventTag.find_by_event_id_and_hashtag_id(self.id, tag.id)
+      if event_tag.blank?
+        EventTag.create!(event_id: self.id, hashtag_id: tag.id)
+      end
+      ids << tag.id
     end
+    EventTag.where("event_id = ? AND hashtag_id NOT IN(?)", self.id, ids).try(:destroy_all)
   end
   
   def self.event_create(data, current_user)
@@ -239,7 +245,7 @@ class Event < ApplicationRecord
 
   def self.event_response(event)
     event = event.as_json(
-        only:    [:id, :name, :location, :start_date, :end_date, :is_deleted],
+        only:[:id, :name, :location, :start_date, :end_date, :is_deleted, :hash_tag],
         include:{
             hashtags:{
                 only:[:id, :name]
