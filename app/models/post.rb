@@ -13,7 +13,6 @@ class Post < ApplicationRecord
   belongs_to :event
   accepts_nested_attributes_for :post_attachments, :post_members
   
-  # after_commit :process_hashtags
   @@limit = 10
   @@current_profile = nil
   
@@ -25,26 +24,7 @@ class Post < ApplicationRecord
             dictionary: 'english'
         }
     }
-
   
-  def process_hashtags
-    arr = []
-    hashtag_regex, current_user = /\B#\w\w+/
-    text_hashtags_title = post_title.scan(hashtag_regex) if post_title.present?
-    text_hashtags_description = post_description.scan(hashtag_regex) if post_description.present?
-    arr << text_hashtags_title
-    arr << text_hashtags_description
-    tags = (arr.flatten).uniq
-    tags.each do |ar|
-      tag_name = Hashtag.find_by_name(ar)
-      if tag_name.present?
-        tag_name.count = tag_name.count+1
-        tag_name.save!
-      else
-        Hashtag.create name: ar
-      end
-    end
-  end
 
   def self.post_create(data, current_user)
     begin

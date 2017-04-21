@@ -66,6 +66,7 @@ class Api::V1::EventsController < Api::V1::ApiProtectedController
   # Call from web
   def create
     event = Event.new(event_params)
+    
     if event.save
       resp = {resp_data: {}, resp_status: 1, resp_message: 'success'}
       return render json: resp
@@ -121,6 +122,6 @@ class Api::V1::EventsController < Api::V1::ApiProtectedController
   
   private
   def event_params
-    params.require(:event).permit(:name, :location, :start_date, :end_date)
+    params.require(:event).permit(:name, :location, :start_date, :end_date, :hash_tag)
   end
 end

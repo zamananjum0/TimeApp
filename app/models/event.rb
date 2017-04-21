@@ -4,9 +4,13 @@ class Event < ApplicationRecord
   
   @@limit           = 10
   @@current_profile = nil
-  has_many   :posts
+  
+  has_many :posts
+  has_many :event_tags, dependent: :destroy
+  has_many :hashtags, through: :event_tags
   belongs_to :post   #this only for wiining post
   
+  after_commit :process_hashtags
   pg_search_scope :search_by_title,
     against: :description,
     using: {
@@ -15,8 +19,27 @@ class Event < ApplicationRecord
             dictionary: "english"
         }
     }
+  
   def post_count
     self.posts.count
+  end
+
+  def process_hashtags
+    arr = []
+    hashtag_regex, current_user = /\B#\w\w+/
+    text_hashtags_title = hash_tag.scan(hashtag_regex) if hash_tag.present?
+    arr << text_hashtags_title
+    tags = (arr.flatten).uniq
+    tags.each do |ar|
+      tag = Hashtag.find_by_name(ar)
+      if tag.present?
+        tag.count = tag.count+1
+        tag.save!
+      else
+        hash_tag = Hashtag.create!(name: ar)
+        EventTag.create!(event_id: self.id, hashtag_id: hash_tag.id)
+      end
+    end
   end
   
   def self.event_create(data, current_user)
@@ -205,14 +228,23 @@ class Event < ApplicationRecord
     events = events.as_json(
         only:    [:id, :name, :location, :description, :start_date, :end_date, :created_at, :updated_at],
         methods: [:post_count],
+        include:{
+            hashtags:{
+                only:[:id, :name]
+            }
+        }
     )
-
     { events: events }.as_json
   end
 
   def self.event_response(event)
     event = event.as_json(
-        only:    [:id, :name, :location, :start_date, :end_date, :is_deleted]
+        only:    [:id, :name, :location, :start_date, :end_date, :is_deleted],
+        include:{
+            hashtags:{
+                only:[:id, :name]
+            }
+        }
     )
 
     events_array = []
@@ -225,6 +257,9 @@ class Event < ApplicationRecord
     events = events.as_json(
         only:    [:id, :name, :location, :start_date, :end_date],
         include:{
+            hashtags:{
+                only:[:id, :name]
+            },
             post:{
                 only:[:id, :post_title],
                 methods: [:likes_count],
