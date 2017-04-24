@@ -62,6 +62,7 @@ Rails.application.routes.draw do
       resources :groups do
         collection do
           post 'update_group'
+          delete 'delete_group'
         end
       end
       

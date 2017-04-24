@@ -3,9 +3,7 @@ class MemberFollowing < ApplicationRecord
   include AppConstants
   
   belongs_to :member_profile
- 
-
-
+  
   def self.search_member(data, current_user)
     begin
       data = data.with_indifferent_access
@@ -111,6 +109,15 @@ class MemberFollowing < ApplicationRecord
       if member_following.present?
         member_following.is_deleted = true
         member_following.save!
+        # Remove from groups
+        profile = current_user.profile
+        groups = profile.groups
+        if groups.present?
+          groups.each do |group|
+            group_member = GroupMember.where(group_id: group.id, member_profile_id: data[:following_profile_id])
+            group_member.destroy_all if group_member.present?
+          end
+        end
         resp_status = 1
         resp_message = 'Unfollow Successfull.'
         resp_errors = ''

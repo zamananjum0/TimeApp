@@ -56,4 +56,19 @@ class Api::V1::GroupsController < ApplicationController
       return render json: resp_data
     end
   end
+  
+  def delete_group
+    # params ={
+    #   auth_token: UserSession.last.auth_token,
+    #   "id": "896d2d7b-6f29-4a45-9459-618b8b4bddf2"
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      resp_data  =  Group.delete_group(params, user_session.user)
+      render json: resp_data
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
 end

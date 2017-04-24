@@ -2,7 +2,7 @@ class Group < ApplicationRecord
   include JsonBuilder
   
   belongs_to :member_profile
-  has_many :group_members
+  has_many :group_members, dependent: :destroy
   
   validates_uniqueness_of :name, :scope => :member_profile_id
   accepts_nested_attributes_for :group_members
@@ -108,6 +108,34 @@ class Group < ApplicationRecord
   end
   resp_request_id = data[:request_id]
   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+  end
+  
+  def self.delete_group(data, current_user)
+    begin
+      data  = data.with_indifferent_access
+      profile = current_user.profile
+      groups = profile.groups.where(id: data[:id])
+      if groups.present?
+        groups.destroy_all
+        resp_data   = {}
+        resp_status = 1
+        resp_message = 'Group deleted'
+        resp_errors  = ''
+      else
+        resp_data   = {}
+        resp_status = 1
+        resp_message = 'No group found'
+        resp_errors  = ''
+      end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id   = data[:request_id]
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
   
   def self.groups_response(groups)
