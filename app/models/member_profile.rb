@@ -11,6 +11,7 @@ class MemberProfile < ApplicationRecord
   has_many :synchronizations
   has_many :posts
   has_many :events
+  has_many :groups
   accepts_nested_attributes_for :user
   
   pg_search_scope :search_by_name,

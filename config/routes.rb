@@ -59,6 +59,11 @@ Rails.application.routes.draw do
           post 'unfollow_member'
         end
       end
+      resources :groups do
+        collection do
+          post 'update_group'
+        end
+      end
       
       # Routes for web
       resources :dashboards, only:[:index]

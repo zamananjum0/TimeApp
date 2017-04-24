@@ -54,18 +54,18 @@ class Event < ApplicationRecord
       profile = current_user.profile
       event   = profile.events.build(data[:event])
       if event.save
-        resp_data       = ''
+        resp_data       = {}
         resp_status     = 1
         resp_message    = 'Event Created'
         resp_errors     = ''
       else
-        resp_data       = ''
+        resp_data       = {}
         resp_status     = 0
         resp_message    = 'Errors'
         resp_errors     = event.errors.messages
       end
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
@@ -84,7 +84,7 @@ class Event < ApplicationRecord
       resp_message    = 'Event details'
       resp_errors     = ''
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
