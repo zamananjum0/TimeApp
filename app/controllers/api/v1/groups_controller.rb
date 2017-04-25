@@ -45,7 +45,11 @@ class Api::V1::GroupsController < ApplicationController
     #       "id": "896d2d7b-6f29-4a45-9459-618b8b4bddf2",
     #       "name": "Book Gala"
     #   },
-    #   "group_members":["68fffa3b-c53b-4509-8263-2a41441abbed"]
+    #   "group_members":[
+    #     {
+    #       "member_profile_id": "68fffa3b-c53b-4509-8263-2a41441abbed"
+    #     }
+    #   ]
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?

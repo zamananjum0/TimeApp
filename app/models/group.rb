@@ -62,10 +62,13 @@ class Group < ApplicationRecord
     data  = data.with_indifferent_access
     profile = current_user.profile
     group   = profile.groups.find_by_id(data[:group][:id])
+    group_members = []
     if group.present?
       if data[:group_members].present?
         existing_group_members = group.group_members
-        group_members = data[:group_members]
+        data[:group_members].each do |gm|
+          group_members << gm[:member_profile_id]
+        end
         existing_group_members.each do |group_member|
           if !group_members.include? group_member.member_profile_id
             group_member.destroy

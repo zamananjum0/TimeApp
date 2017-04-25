@@ -188,92 +188,36 @@ class Event < ApplicationRecord
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 
-  # def self.leader_winners_old(data, current_user)
-  #   begin
-  #     data = data.with_indifferent_access
-  #     max_event_date = data[:max_event_date] || DateTime.now
-  #     min_event_date = data[:min_event_date] || DateTime.now
-  #
-  #     if data[:max_event_date].present?
-  #       events  = Event.where('end_date > ? AND end_date < ?', max_event_date, DateTime.now)
-  #     elsif data[:min_event_date].present?
-  #       events  = Event.where('end_date < ?', min_event_date)
-  #     else
-  #       events  = Event.where('end_date < ?', DateTime.now)
-  #     end
-  #     events = events.where('post_id IS NOT NULL')
-  #
-  #     following_ids = current_user.profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted: false).pluck(:following_profile_id)
-  #     events = events.where(winner_profile_id: following_ids)
-  #
-  #     events = events.order("end_date DESC")
-  #     events = events.limit(@@limit)
-  #
-  #     if events.present?
-  #       Event.where("end_date > ? AND end_date < ?", events.first.end_date, DateTime.now).present? ? previous_page_exist = true : previous_page_exist = false
-  #       Event.where("end_date < ? AND winner_profile_id IN (?)", events.last.end_date, following_ids).present? ? next_page_exist = true : next_page_exist = false
-  #     end
-  #
-  #     paging_data = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
-  #     resp_data   = winners_response(events)
-  #     resp_status = 1
-  #     resp_message = 'Event list'
-  #     resp_errors = ''
-  #   rescue Exception => e
-  #     resp_data       = {}
-  #     resp_status     = 0
-  #     paging_data     = ''
-  #     resp_message    = 'error'
-  #     resp_errors     = e
-  #   end
-  #   resp_request_id   = data[:request_id]
-  #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  # end
-  def self.leader_winners(data, current_user)
+  def self.leader_winners_old(data, current_user)
     begin
       data = data.with_indifferent_access
-      per_page     = (data[:per_page] || @@limit).to_i
-      page         = (data[:page] || 1).to_i
-    
-      profile = current_user.profile
-      groups  = profile.groups
-      records = []
-      
-      groups      = groups.page(page.to_i).per_page(per_page.to_i)
-      paging_data = JsonBuilder.get_paging_data(page, per_page, groups)
-      
-      groups && groups.each do |group|
-        group_members = group.group_members
-        if group_members.present?
-          group_member_ids = group_members.pluck(:member_profile_id)
-          member_profile = MemberProfile.joins(:events).select("member_profiles.*, COUNT('events.id') event_count").where(id: group_member_ids).group('member_profiles.id').order('event_count DESC').try(:first)
-      
-          if member_profile.present?
-            user = member_profile.user
-            records << {
-                id:   group.id,
-                name: group.name,
-                grou_members:[
-                    {
-                      id: group_members.where(member_profile_id: member_profile.id).try(:first).id,
-                      member_profile:{
-                          id:    member_profile.id,
-                          photo: member_profile.photo,
-                          user:{
-                              id:       user.id,
-                              username: user.username,
-                              email:    user.email
-                          }
-                      }
-                    }
-                ]
-            }
-          end
-        end
+      max_event_date = data[:max_event_date] || DateTime.now
+      min_event_date = data[:min_event_date] || DateTime.now
+
+      if data[:max_event_date].present?
+        events  = Event.where('end_date > ? AND end_date < ?', max_event_date, DateTime.now)
+      elsif data[:min_event_date].present?
+        events  = Event.where('end_date < ?', min_event_date)
+      else
+        events  = Event.where('end_date < ?', DateTime.now)
       end
-      resp_data   = {groups: records}.as_json
+      events = events.where('post_id IS NOT NULL')
+
+      following_ids = current_user.profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted: false).pluck(:following_profile_id)
+      events = events.where(winner_profile_id: following_ids)
+
+      events = events.order("end_date DESC")
+      events = events.limit(@@limit)
+
+      if events.present?
+        Event.where("end_date > ? AND end_date < ?", events.first.end_date, DateTime.now).present? ? previous_page_exist = true : previous_page_exist = false
+        Event.where("end_date < ? AND winner_profile_id IN (?)", events.last.end_date, following_ids).present? ? next_page_exist = true : next_page_exist = false
+      end
+
+      paging_data = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
+      resp_data   = winners_response(events)
       resp_status = 1
-      resp_message = 'Group list'
+      resp_message = 'Event list'
       resp_errors = ''
     rescue Exception => e
       resp_data       = {}
@@ -285,6 +229,62 @@ class Event < ApplicationRecord
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
+  # def self.leader_winners_new(data, current_user)
+  #   begin
+  #     data = data.with_indifferent_access
+  #     per_page     = (data[:per_page] || @@limit).to_i
+  #     page         = (data[:page] || 1).to_i
+  #
+  #     profile = current_user.profile
+  #     groups  = profile.groups
+  #     records = []
+  #
+  #     groups      = groups.page(page.to_i).per_page(per_page.to_i)
+  #     paging_data = JsonBuilder.get_paging_data(page, per_page, groups)
+  #
+  #     groups && groups.each do |group|
+  #       group_members = group.group_members
+  #       if group_members.present?
+  #         group_member_ids = group_members.pluck(:member_profile_id)
+  #         member_profile = MemberProfile.joins(:events).select("member_profiles.*, COUNT('events.id') event_count").where(id: group_member_ids).group('member_profiles.id').order('event_count DESC').try(:first)
+  #
+  #         if member_profile.present?
+  #           user = member_profile.user
+  #           records << {
+  #               id:   group.id,
+  #               name: group.name,
+  #               grou_members:[
+  #                   {
+  #                     id: group_members.where(member_profile_id: member_profile.id).try(:first).id,
+  #                     member_profile:{
+  #                         id:    member_profile.id,
+  #                         photo: member_profile.photo,
+  #                         user:{
+  #                             id:       user.id,
+  #                             username: user.username,
+  #                             email:    user.email
+  #                         }
+  #                     }
+  #                   }
+  #               ]
+  #           }
+  #         end
+  #       end
+  #     end
+  #     resp_data   = {groups: records}.as_json
+  #     resp_status = 1
+  #     resp_message = 'Group list'
+  #     resp_errors = ''
+  #   rescue Exception => e
+  #     resp_data       = {}
+  #     resp_status     = 0
+  #     paging_data     = ''
+  #     resp_message    = 'error'
+  #     resp_errors     = e
+  #   end
+  #   resp_request_id   = data[:request_id]
+  #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
+  # end
   
   def self.events_response(events)
     events = events.as_json(
