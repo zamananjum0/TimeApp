@@ -188,7 +188,7 @@ class Event < ApplicationRecord
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 
-  def self.leader_winners_old(data, current_user)
+  def self.leader_winners(data, current_user)
     begin
       data = data.with_indifferent_access
       max_event_date = data[:max_event_date] || DateTime.now
