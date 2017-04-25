@@ -204,14 +204,14 @@ class Event < ApplicationRecord
       events = events.where('post_id IS NOT NULL')
 
       following_ids = current_user.profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted: false).pluck(:following_profile_id)
-      events = events.where(winner_profile_id: following_ids)
+      events = events.where(member_profile_id: following_ids)
 
       events = events.order("end_date DESC")
       events = events.limit(@@limit)
 
       if events.present?
         Event.where("end_date > ? AND end_date < ?", events.first.end_date, DateTime.now).present? ? previous_page_exist = true : previous_page_exist = false
-        Event.where("end_date < ? AND winner_profile_id IN (?)", events.last.end_date, following_ids).present? ? next_page_exist = true : next_page_exist = false
+        Event.where("end_date < ? AND member_profile_id IN (?)", events.last.end_date, following_ids).present? ? next_page_exist = true : next_page_exist = false
       end
 
       paging_data = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
@@ -285,6 +285,33 @@ class Event < ApplicationRecord
   #   resp_request_id   = data[:request_id]
   #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   # end
+  
+  def self.competitions(data, current_user)
+    begin
+      data = data.with_indifferent_access
+      per_page = (data[:per_page] || @@limit).to_i
+      page     = (data[:page] || 1).to_i
+      
+      profile = current_user.profile
+      event_ids = profile.posts.pluck(:event_id).try(:uniq)
+      events = Event.where(id: event_ids)
+      
+      events = events.page(page.to_i).per_page(per_page.to_i)
+      paging_data = JsonBuilder.get_paging_data(page, per_page, events)
+      resp_data   = events_response(events)
+      resp_status = 1
+      resp_message = 'Group list'
+      resp_errors = ''
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id   = data[:request_id]
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
+  end
   
   def self.events_response(events)
     events = events.as_json(

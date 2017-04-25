@@ -121,6 +121,22 @@ class Api::V1::EventsController < Api::V1::ApiProtectedController
     end
   end
   
+  def competitions
+    # params = {
+    #     "auth_token": UserSession.last.auth_token,
+    #     "page": 1,
+    #     "per_page": 10
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      resp_data  =  Event.competitions(params, user_session.user)
+      render json: resp_data
+    else
+      resp = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', error: ''}
+      return render json: resp
+    end
+  end
+  
   private
   def event_params
     params.require(:event).permit(:name, :location, :start_date, :end_date, :hash_tag)

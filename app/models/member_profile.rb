@@ -12,6 +12,7 @@ class MemberProfile < ApplicationRecord
   has_many :posts
   has_many :events
   has_many :groups
+  has_many :events   #just for calculating the winning events
   accepts_nested_attributes_for :user
   
   pg_search_scope :search_by_name,
@@ -71,7 +72,7 @@ class MemberProfile < ApplicationRecord
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
         only: [:id, :photo, :is_profile_public],
-        methods: [:posts_count,:followings_count, :followers_count],
+        methods: [:posts_count,:followings_count, :followers_count, :competition_count, :winning_count],
         include: {
             user: {
                 only: [:id, :username, :email],
@@ -278,6 +279,14 @@ class MemberProfile < ApplicationRecord
     else
       false
     end
+  end
+  
+  def competition_count
+    self.posts.pluck(:event_id).try(:uniq).try(:count)
+  end
+
+  def winning_count
+    self.events.count
   end
 
   def self.profile_timeline(data, current_user)
