@@ -445,6 +445,57 @@ class Post < ApplicationRecord
     end
   end
   
+  def self.re_post(data, current_user)
+    begin
+      data = data.with_indifferent_access
+      post    = Post.find_by_id(data[:post_id])
+      if post.present?
+        profile = current_user.profile
+        new_post = profile.posts.build
+        
+        new_post.post_title = post.post_title
+        new_post.post_type  = post.post_type
+        new_post.event_id   = post.event_id
+        new_post.save!
+        
+        post_members     = post.post_members
+        post_attachments = post.post_attachments
+        post_members&.each do |post_member|
+          new_post_member = new_post.post_members.build
+          new_post_member.member_profile_id = post_member.member_profile_id
+          new_post_member.save!
+        end
+  
+        post_attachments&.each do |attachment|
+          new_post_attachment = new_post.post_attachments.build
+          new_post_attachment.attachment_url  = attachment.attachment_url
+          new_post_attachment.thumbnail_url   = attachment.thumbnail_url
+          new_post_attachment.attachment_type = attachment.attachment_type
+          new_post_attachment.width           = attachment.width
+          new_post_attachment.height           = attachment.height
+          new_post_attachment.save!
+        end
+        resp_data = {}
+        resp_status = 1
+        resp_message = 'Post created'
+        resp_errors = ''
+      else
+        resp_data = {}
+        resp_status = 0
+        resp_message = 'Post not created'
+        resp_errors = 'errors'
+      end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id   = data[:request_id]
+    response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    [response, new_post]
+  end
+  
 end
 
 # == Schema Information

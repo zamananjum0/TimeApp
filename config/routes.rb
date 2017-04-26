@@ -50,6 +50,7 @@ Rails.application.routes.draw do
           get 'post_list'
           get 'post_likes_list'
           get 'post_comments_list'
+          post 're_post'
         end
       end
       resources :comments

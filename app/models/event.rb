@@ -341,7 +341,7 @@ class Event < ApplicationRecord
 
   def self.event_response(event)
     event = event.as_json(
-        only:[:id, :name, :location, :start_date, :end_date, :is_deleted, :hash_tag],
+        only:[:id, :name, :location, :start_date, :end_date, :is_deleted, :hash_tag, :description],
         include:{
             hashtags:{
                 only:[:id, :name]
@@ -357,7 +357,7 @@ class Event < ApplicationRecord
 
   def self.winners_response(events)
     events = events.as_json(
-        only:    [:id, :name, :location, :start_date, :end_date],
+        only:    [:id, :name, :location, :start_date, :end_date, :description],
         include:{
             hashtags:{
                 only:[:id, :name]

@@ -51,4 +51,21 @@ class Api::V1::PostsController < Api::V1::ApiProtectedController
     end
     common_api_response(resp_data, resp_status, resp_message, resp_errors)
   end
+  
+  # Call from app
+  def re_post
+    # params ={
+    #   "auth_token": UserSession.first.auth_token,
+    #   "post_id": "deb3d126-cd4e-4bbb-87c3-34a05e83d0b4"
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      resp_data, new_post = Post.re_post(params, user_session.user)
+      render json: resp_data
+      Post.post_sync(new_post.id, user_session.user)
+    else
+      resp_data = {resp_status: 0, message: 'Invalid Token', error: '', data: {}}
+      return render json: resp_data
+    end
+  end
 end
