@@ -5,7 +5,7 @@ class MemberFollowing < ApplicationRecord
   belongs_to :member_profile
   
   def self.search_member(data, current_user)
-    # begin
+    begin
       data = data.with_indifferent_access
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
@@ -32,13 +32,13 @@ class MemberFollowing < ApplicationRecord
         resp_message = 'success'
         resp_errors = 'No string match found.'
       end
-    # rescue Exception => e
-    #   resp_data       = {}
-    #   resp_status     = 0
-    #   paging_data     = ''
-    #   resp_message    = 'error'
-    #   resp_errors     = e
-    # end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+    end
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
