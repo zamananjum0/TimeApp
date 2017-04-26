@@ -86,7 +86,7 @@ class User < ApplicationRecord
   end
   
   def self.forgot_password(data)
-    begin
+    # begin
       data = data.with_indifferent_access
       user = User.find_by_email(data[:user][:email])
       if user.present?
@@ -94,19 +94,19 @@ class User < ApplicationRecord
         resp_status     = 1
         resp_message    = 'Please check your email and follow the instructions.'
         resp_errors     = ''
-        resp_data       = ''
+        resp_data       = {}
       else
-        resp_data       = ''
+        resp_data       = {}
         resp_status     = 0
         resp_message    = 'Errors'
         resp_errors     = 'User does not exist.'
       end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      resp_message    = 'error'
-      resp_errors     = e
-    end
+    # rescue Exception => e
+    #   resp_data       = ''
+    #   resp_status     = 0
+    #   resp_message    = 'error'
+    #   resp_errors     = e
+    # end
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end

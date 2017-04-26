@@ -1,0 +1,16 @@
+<div class="container">
+  <div class="row login-container animated fadeInUp">
+    <div class="col-md-7 col-md-offset-2 tiles white no-padding">
+      <div class="p-t-30 p-l-40 p-b-20 xs-p-t-10 xs-p-l-10 xs-p-b-10">
+        <h2 class="normal" style="text-align:center;">Welcome to TIME!</h2>
+        <br/>
+        <h2>Congratulations <%= current_user.username || current_user.email %>!</h2>
+      </div>
+      <div style="background-color:mediumseagreen;" class="tiles grey p-t-20 p-b-20 text-black">
+        <div style="background-color:mediumseagreen;text-align:center;">
+          <h4 style="color:white;">Your password successfully changed. Now you can login.</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

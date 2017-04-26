@@ -7,6 +7,8 @@ task :define_ranking => :environment do
       event.post_id           = post.id
       event.member_profile_id = post.member_profile_id
       event.save!
+      # Increase Post limit of profile
+      
     end
   end
 end

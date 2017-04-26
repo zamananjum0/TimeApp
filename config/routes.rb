@@ -3,7 +3,7 @@ Rails.application.routes.draw do
   devise_for :users
 
   apipie
-  root to: 'apipie/apipies#index'
+  root to: 'dashboards#index'
 
   require 'sidekiq/web'
   mount Sidekiq::Web => '/sidekiq'
@@ -38,9 +38,9 @@ Rails.application.routes.draw do
       end
       resources :events do
         collection do
-          get  'event_posts'
-          get  'global_winners'
-          get  'leaderboard_winners'
+          get 'event_posts'
+          get 'global_winners'
+          get 'leaderboard_winners'
           get 'competitions'
           post 'block_event'
         end
