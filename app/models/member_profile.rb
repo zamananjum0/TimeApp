@@ -247,6 +247,15 @@ class MemberProfile < ApplicationRecord
     end
   end
 
+  def is_my_follower
+    member_followers = MemberFollowing.where(following_status: AppConstants::ACCEPTED, member_profile_id: self.id, following_profile_id: @@current_profile.id, is_deleted: false)
+    if member_followers.present?
+      true
+    else
+      false
+    end
+  end
+
   def self.is_following(profile, current_user)
     member_followings = MemberFollowing.where(member_profile_id: current_user.profile_id, following_profile_id: profile.id, is_deleted: false)
     if member_followings.blank?
@@ -260,6 +269,15 @@ class MemberProfile < ApplicationRecord
     end
   end
 
+  def is_follower(profile, current_user)
+    member_followers = MemberFollowing.where(following_status: AppConstants::ACCEPTED, member_profile_id: profile.id, following_profile_id: current_user.profile_id, is_deleted: false)
+    if member_followers.present?
+      true
+    else
+      false
+    end
+  end
+
   def posts_count
     self.posts.count
   end
@@ -270,15 +288,6 @@ class MemberProfile < ApplicationRecord
 
   def followers_count
     MemberFollowing.where(following_profile_id: self.id, following_status: AppConstants::ACCEPTED, is_deleted: false).count
-  end
-
-  def is_my_follower
-    member_followers = MemberFollowing.where(following_status: AppConstants::ACCEPTED, member_profile_id: self.id, following_profile_id: @@current_profile.id, is_deleted: false)
-    if member_followers.present?
-      true
-    else
-      false
-    end
   end
   
   def competition_count

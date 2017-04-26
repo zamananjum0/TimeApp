@@ -20,7 +20,7 @@ class Like < ApplicationRecord
     begin
       data                        = data.with_indifferent_access
       post                        = Post.find_by_id(data[:post][:id])
-      # if post.event.end_date > DateTime.now
+      if post.event.end_date > DateTime.now
         post_like                   = Like.find_by_likable_id_and_member_profile_id(post.id, current_user.profile_id) || post.likes.build
         post_like.member_profile_id = current_user.profile_id
         post_like.is_like           = data[:post][:is_like]
@@ -37,12 +37,12 @@ class Like < ApplicationRecord
           resp_status     = 0
           resp_message    = 'Errors'
         end
-      # else
-      #   resp_data       = {}
-      #   resp_broadcast  = ''
-      #   resp_status     = 0
-      #   resp_message    = 'You can\'t vote on the closed event.'
-      # end
+      else
+        resp_data       = {}
+        resp_broadcast  = ''
+        resp_status     = 0
+        resp_message    = 'You can\'t vote on the closed event.'
+      end
       resp_request_id = data[:request_id]
       response        = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
       [response, resp_broadcast]
