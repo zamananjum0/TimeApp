@@ -23,10 +23,10 @@ class Synchronization < ApplicationRecord
         only: [:id, :member_profile_id, :following_profile_id, :following_status, :created_at, :updated_at],
         include: {
             member_profile: {
-                only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender],
+                only: [:id, :photo],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name, :email]
+                        only: [:id, :username, :email]
                     }
                 }
             }

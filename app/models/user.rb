@@ -41,8 +41,8 @@ class User < ApplicationRecord
     data = data.with_indifferent_access
     if data[:user][:email].present?
       user = User.find_by_email(data[:user][:email])
-    else
-      user = User.find_by_phone(data[:user][:phone])
+    # else
+    #   user = User.find_by_phone(data[:user][:phone])
     end
     device_type = data[:user_session][:device_type]
     if user && user.valid_password?(data[:user][:password])

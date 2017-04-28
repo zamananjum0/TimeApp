@@ -188,7 +188,7 @@ class MemberFollowing < ApplicationRecord
       if data[:member_profile][:search_key].present?
         profile_ids     = member_followings.pluck(:member_profile_id)
         # member_profiles = MemberProfile.where(id: profile_ids)
-        users = User.where("first_name @@ :q or last_name @@ :q or email @@ :q", q: "%#{data[:member_profile][:search_key]}%")
+        users = User.where("username @@ :q or email @@ :q", q: "%#{data[:member_profile][:search_key]}%")
         searched_profile_ids = users.where(profile_id: profile_ids).pluck(:profile_id)
         member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false, member_profile_id: searched_profile_ids)
       end
@@ -229,7 +229,7 @@ class MemberFollowing < ApplicationRecord
       if data[:member_profile][:search_key].present?
         profile_ids     = member_followings.pluck(:following_profile_id)
         # member_profile = MemberProfile.where(id: profile_ids)
-        users = User.where("first_name @@ :q or last_name @@ :q or email @@ :q", q: "%#{data[:member_profile][:search_key]}%")
+        users = User.where("username @@ :q or email @@ :q", q: "%#{data[:member_profile][:search_key]}%")
         searched_profile_ids = users.where(profile_id: profile_ids).pluck(:profile_id)
         member_followings = profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted: false, following_profile_id: searched_profile_ids)
       end
