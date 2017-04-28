@@ -13,4 +13,5 @@ module AppConstants
   POST              = 'Post'
   LIKED             = 'liked'
   DISLIKED          = 'disliked'
+  EVENT             = 'Event'
 end

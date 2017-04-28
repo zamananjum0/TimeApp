@@ -6,8 +6,8 @@ class Event < ApplicationRecord
   @@current_profile = nil
   
   has_many :posts
-  has_many :event_tags, dependent: :destroy
-  has_many :hashtags, through: :event_tags
+  has_many :hashtags, through: :media_tags
+  has_many :media_tags, as: :media, dependent: :destroy
   belongs_to :post   #this only for wiining post
   
   after_commit :process_hashtags
@@ -39,26 +39,27 @@ class Event < ApplicationRecord
 
   def process_hashtags
     arr = []
-    hashtag_regex, current_user = /\B#\w\w+/
-    text_hashtags_title = hash_tag.scan(hashtag_regex) if hash_tag.present?
+    hashtag_regex = /\B#\w\w+/
+    text_hashtags_title = description.scan(hashtag_regex) if description.present?
     arr << text_hashtags_title
     tags = (arr.flatten).uniq
     ids = []
-    tags.each do |ar|
-      tag = Hashtag.find_by_name(ar)
+   
+    tags&.each do |ar|
+      tag = Hashtag.where("lower(name) = ?", ar.downcase).first
       if tag.present?
-        tag.count = tag.count+1
+        tag.count = tag.count + 1
         tag.save!
       else
-        tag = Hashtag.create!(name: ar)
+        tag = Hashtag.create!(name: ar.downcase)
       end
-      event_tag = EventTag.find_by_event_id_and_hashtag_id(self.id, tag.id)
-      if event_tag.blank?
-        EventTag.create!(event_id: self.id, hashtag_id: tag.id)
+      media_tag = MediaTag.find_by_media_id_and_media_type_and_hashtag_id(self.id, AppConstants::EVENT, tag.id)
+      if media_tag.blank?
+        MediaTag.create!(media_id: self.id, media_type: AppConstants::EVENT, hashtag_id: tag.id)
       end
       ids << tag.id
     end
-    EventTag.where("event_id = ? AND hashtag_id NOT IN(?)", self.id, ids).try(:destroy_all)
+    MediaTag.where("media_id = ? AND hashtag_id NOT IN(?)", self.id, ids).try(:destroy_all)
   end
   
   def self.event_create(data, current_user)
@@ -328,10 +329,10 @@ class Event < ApplicationRecord
   
   def self.events_response(events)
     events = events.as_json(
-        only:    [:id, :name, :location, :description, :start_date, :end_date, :created_at, :updated_at],
+        only:    [:id, :name, :location, :description, :start_date, :end_date, :created_at, :updated_at, :is_deleted],
         methods: [:post_count],
         include:{
-            hashtags:{
+            media_tags:{
                 only:[:id, :name]
             }
         }
@@ -343,7 +344,7 @@ class Event < ApplicationRecord
     event = event.as_json(
         only:[:id, :name, :location, :start_date, :end_date, :is_deleted, :hash_tag, :description],
         include:{
-            hashtags:{
+            media_tags:{
                 only:[:id, :name]
             }
         }

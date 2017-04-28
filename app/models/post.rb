@@ -10,11 +10,15 @@ class Post < ApplicationRecord
   has_many   :likes,            dependent: :destroy, as: :likable
   has_many   :recent_comments, -> { order(created_at: :desc).limit(10) }, class_name: 'Comment', as: :commentable
   has_many   :recent_likes,    -> { order(created_at: :desc).limit(10) }, class_name: 'Like',    as: :likable
-  belongs_to :event
+
+  
+  has_many :hashtags,   through:   :media_tags
+  has_many :media_tags, as: :media, dependent: :destroy
   accepts_nested_attributes_for :post_attachments, :post_members
   
   @@limit = 10
   @@current_profile = nil
+  after_commit :process_hashtags
   
   pg_search_scope :search_by_title,
     against: [:post_description, :post_title],
@@ -24,8 +28,31 @@ class Post < ApplicationRecord
             dictionary: 'english'
         }
     }
-  
 
+  def process_hashtags
+    arr = []
+    hashtag_regex = /\B#\w\w+/
+    text_hashtags_title = post_title.scan(hashtag_regex) if post_title.present?
+    arr << text_hashtags_title
+    tags = (arr.flatten).uniq
+    ids = []
+    tags.each do |ar|
+      tag = Hashtag.where("lower(name) = ?", ar.downcase).first
+      if tag.present?
+        tag.count = tag.count + 1
+        tag.save!
+      else
+        tag = Hashtag.create!(name: ar.downcase)
+      end
+      media_tag = MediaTag.find_by_media_id_and_media_type_and_hashtag_id(self.id, AppConstants::POST, tag.id)
+      if media_tag.blank?
+        MediaTag.create!(media_id: self.id, media_type: AppConstants::POST, hashtag_id: tag.id)
+      end
+      ids << tag.id
+    end
+    MediaTag.where("media_id = ? AND hashtag_id NOT IN(?)", self.id, ids).try(:destroy_all)
+  end
+  
   def self.post_create(data, current_user)
     begin
       data = data.with_indifferent_access
@@ -52,7 +79,6 @@ class Post < ApplicationRecord
     rescue Exception => e
       resp_data       = {}
       resp_status     = 0
-      paging_data     = ''
       resp_message    = 'error'
       resp_errors     = e
     end
@@ -62,7 +88,7 @@ class Post < ApplicationRecord
 
   def post_response
     post = self.as_json(
-        only: [:id, :post_title, :event_id, :post_description],
+        only: [:id, :post_title, :post_description],
         methods: [:likes_count, :comments_count],
         include: {
             member_profile: {
@@ -72,9 +98,6 @@ class Post < ApplicationRecord
                         only: [:id, :username, :email]
                     }
                 }
-            },
-            event:{
-                only:[:id, :name]
             },
             post_attachments: {
                 only: [:attachment_url, :thumbnail_url, :attachment_type, :width, :height]
@@ -114,7 +137,6 @@ class Post < ApplicationRecord
   def self.post_destroy(data, current_user)
     begin
       data = data.with_indifferent_access
-
       post = Post.find_by_id(data[:post][:id])
       post.is_deleted = true
       post.save!
@@ -136,7 +158,7 @@ class Post < ApplicationRecord
   def self.posts_array_response(post_array, profile, sync_token=nil)
     @@current_profile = profile
     posts = post_array.as_json(
-        only: [:id, :post_title,  :event_id, :created_at, :updated_at, :is_deleted],
+        only: [:id, :post_title, :created_at, :updated_at, :is_deleted],
         methods: [:likes_count, :liked_by_me, :comments_count],
         include: {
             member_profile: {
@@ -146,9 +168,6 @@ class Post < ApplicationRecord
                         only: [:id, :username, :email]
                     }
                 }
-            },
-            event:{
-              only:[:id, :name]
             },
             recent_comments: {
                 only: [:id, :comment, :created_at, :updated_at],
@@ -398,7 +417,7 @@ class Post < ApplicationRecord
                         only: [:id, :photo],
                         include: {
                             user: {
-                                only: [:id, :usernme, :email]
+                                only: [:id, :username, :email]
                             }
                         }
                     }
@@ -455,7 +474,6 @@ class Post < ApplicationRecord
         
         new_post.post_title = post.post_title
         new_post.post_type  = post.post_type
-        new_post.event_id   = post.event_id
         new_post.save!
         
         post_members     = post.post_members
