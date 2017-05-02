@@ -14,4 +14,6 @@ module AppConstants
   LIKED             = 'liked'
   DISLIKED          = 'disliked'
   EVENT             = 'Event'
+  POST_COUNT        = 10
+  NEW_EVENT         = 'New event started.'
 end

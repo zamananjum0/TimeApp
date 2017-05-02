@@ -32,6 +32,8 @@ config/environments/staging.rb
 config/environments/test.rb
 config/environments/production.rb
 
+config/push_notification
+
 config/deploy/staging.rb
 config/deploy/development.rb
 config/deploy/production.rb

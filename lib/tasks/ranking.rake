@@ -1,5 +1,5 @@
 task :define_ranking => :environment do
-  events  = Event.where('end_date > ? AND end_date <= ?', DateTime.now.beginning_of_day.to_s, DateTime.now.to_s).order('end_date DESC')
+  events  =  Event.where('end_date >= ? AND end_date <= ?', DateTime.now.beginning_of_day.to_s, DateTime.now.to_s).order('end_date DESC')
   events && events.each do |event|
     tag_ids  = event.hashtags.pluck(:id)
     post_ids = MediaTag.where(media_type: AppConstants::POST, hashtag_id: tag_ids).pluck(:media_id)
@@ -13,7 +13,7 @@ task :define_ranking => :environment do
       event.save!
       # Increase Post limit of profile
       profile = post.member_profile
-      profile.remaining_posts_count  = profile.remaining_posts_count + 10
+      profile.remaining_posts_count  = profile.remaining_posts_count + AppConstants::POST_COUNT
       profile.save!
     end
   end

@@ -10,7 +10,6 @@ class Comment < ApplicationRecord
   def self.comment(data, current_user)
     begin
       data        = data.with_indifferent_access
-      
       post      = Post.find_by_id(data[:post][:id])
       comment   = post.comments.build(data[:post][:comment])
       comment.member_profile_id = current_user.profile_id

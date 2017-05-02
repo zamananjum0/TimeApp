@@ -35,7 +35,7 @@ class Api::V1::PostsController < Api::V1::ApiProtectedController
   
   # Call from web
   def destroy
-    post  =  Post.find_by_id_and_event_id(params[:id], params[:event_id])
+    post  =  Post.find_by_id(params[:id])
     if post.present?
       post.is_deleted = params[:is_block]
       post.save!

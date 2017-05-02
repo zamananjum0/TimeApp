@@ -54,6 +54,8 @@ gem 'redis', '~> 3.0'
 
 gem 'rack-cors', require: 'rack/cors'
 
+gem 'rails-push-notifications', '~> 0.2.0'
+
 gem 'sass-rails', '~> 5.0'
 
 gem 'sidekiq', '3.3.0'

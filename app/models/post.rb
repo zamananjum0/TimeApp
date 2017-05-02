@@ -32,7 +32,7 @@ class Post < ApplicationRecord
   def process_hashtags
     arr = []
     hashtag_regex = /\B#\w\w+/
-    text_hashtags_title = post_title.scan(hashtag_regex) if post_title.present?
+    text_hashtags_title = post_description.scan(hashtag_regex) if post_description.present?
     arr << text_hashtags_title
     tags = (arr.flatten).uniq
     ids = []
@@ -158,7 +158,7 @@ class Post < ApplicationRecord
   def self.posts_array_response(post_array, profile, sync_token=nil)
     @@current_profile = profile
     posts = post_array.as_json(
-        only: [:id, :post_title, :created_at, :updated_at, :is_deleted],
+        only: [:id, :post_description, :created_at, :updated_at, :is_deleted],
         methods: [:likes_count, :liked_by_me, :comments_count],
         include: {
             member_profile: {
@@ -430,7 +430,7 @@ class Post < ApplicationRecord
                         only: [:id, :photo],
                         include: {
                             user: {
-                                only: [:id, :usernme, :email]
+                                only: [:id, :username, :email]
                             }
                         }
                     }
@@ -472,7 +472,7 @@ class Post < ApplicationRecord
         profile = current_user.profile
         new_post = profile.posts.build
         
-        new_post.post_title = post.post_title
+        new_post.post_description = post.post_description
         new_post.post_type  = post.post_type
         new_post.save!
         
