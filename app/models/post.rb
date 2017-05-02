@@ -169,45 +169,6 @@ class Post < ApplicationRecord
                     }
                 }
             },
-            recent_comments: {
-                only: [:id, :comment, :created_at, :updated_at],
-                include: {
-                    member_profile: {
-                        only: [:id, :photo],
-                        include: {
-                            user: {
-                                only: [:id, :username, :email]
-                            }
-                        }
-                    }
-                }
-            },
-            recent_likes: {
-                only: [:id, :created_at, :updated_at],
-                include: {
-                    member_profile: {
-                        only: [:id, :photo],
-                        include: {
-                            user: {
-                                only: [:id, :username, :email]
-                            }
-                        }
-                    }
-                }
-            },
-            post_members: {
-                only: [:id, :created_at, :updated_at],
-                include: {
-                    member_profile: {
-                        only: [:id, :photo],
-                        include: {
-                            user: {
-                                only: [:id, :username, :email]
-                            }
-                        }
-                    }
-                }
-            },
             post_attachments: {
                 only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type, :width, :height]
             }
@@ -410,6 +371,12 @@ class Post < ApplicationRecord
         only: [:id, :post_title, :created_at, :updated_at],
         methods: [:likes_count,  :liked_by_me, :comments_count],
         include: {
+            member_profile:{
+              only:[:id, :photo],
+              include:{
+                  only:[:id, :username, :email]
+              }
+            },
             recent_likes: {
                 only: [:id, :created_at, :updated_at],
                 include: {
