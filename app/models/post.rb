@@ -36,7 +36,7 @@ class Post < ApplicationRecord
     arr << text_hashtags_title
     tags = (arr.flatten).uniq
     ids = []
-    tags.each do |ar|
+    tags&.each do |ar|
       tag = Hashtag.where("lower(name) = ?", ar.downcase).first
       if tag.present?
         tag.count = tag.count + 1
@@ -50,7 +50,9 @@ class Post < ApplicationRecord
       end
       ids << tag.id
     end
-    MediaTag.where("media_id = ? AND hashtag_id NOT IN(?)", self.id, ids).try(:destroy_all)
+    if ids.present?
+      MediaTag.where("media_id = ? AND hashtag_id NOT IN(?)", self.id, ids).try(:destroy_all)
+    end
   end
   
   def self.post_create(data, current_user)
@@ -480,7 +482,6 @@ class Post < ApplicationRecord
     response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
     [response, new_post]
   end
-  
 end
 
 # == Schema Information
