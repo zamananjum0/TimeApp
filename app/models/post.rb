@@ -33,30 +33,33 @@ class Post < ApplicationRecord
     arr = []
     hashtag_regex = /\B#\w\w+/
     text_hashtags_title = post_description.scan(hashtag_regex) if post_description.present?
-    arr << text_hashtags_title
-    tags = (arr.flatten).uniq
-    ids = []
-    tags&.each do |ar|
-      tag = Hashtag.where("lower(name) = ?", ar.downcase).first
-      if tag.present?
-        tag.count = tag.count + 1
-        tag.save!
-      else
-        tag = Hashtag.create!(name: ar.downcase)
+    binding.pry
+    if text_hashtags_title.present?
+      arr << text_hashtags_title
+      tags = (arr.flatten).uniq
+      ids = []
+      tags && tags.each do |ar|
+        tag = Hashtag.where("lower(name) = ?", ar.downcase).try(:first)
+        if tag.present?
+          tag.count = tag.count + 1
+          tag.save!
+        else
+          tag = Hashtag.create!(name: ar.downcase)
+        end
+        media_tag = MediaTag.find_by_media_id_and_media_type_and_hashtag_id(self.id, AppConstants::POST, tag.id)
+        if media_tag.blank?
+          MediaTag.create!(media_id: self.id, media_type: AppConstants::POST, hashtag_id: tag.id)
+        end
+        ids << tag.id
       end
-      media_tag = MediaTag.find_by_media_id_and_media_type_and_hashtag_id(self.id, AppConstants::POST, tag.id)
-      if media_tag.blank?
-        MediaTag.create!(media_id: self.id, media_type: AppConstants::POST, hashtag_id: tag.id)
+      if ids.present?
+        MediaTag.where("media_id = ? AND hashtag_id NOT IN(?)", self.id, ids).try(:destroy_all)
       end
-      ids << tag.id
-    end
-    if ids.present?
-      MediaTag.where("media_id = ? AND hashtag_id NOT IN(?)", self.id, ids).try(:destroy_all)
     end
   end
   
   def self.post_create(data, current_user)
-    begin
+    # begin
       data = data.with_indifferent_access
       profile = current_user.profile
       post = profile.posts.build(data[:post])
@@ -78,12 +81,12 @@ class Post < ApplicationRecord
         resp_message    = 'You are exceeding your posts limit'
         resp_errors     = ''
       end
-    rescue Exception => e
-      resp_data       = {}
-      resp_status     = 0
-      resp_message    = 'error'
-      resp_errors     = e
-    end
+    # rescue Exception => e
+    #   resp_data       = {}
+    #   resp_status     = 0
+    #   resp_message    = 'error'
+    #   resp_errors     = e
+    # end
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
