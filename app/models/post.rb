@@ -33,7 +33,6 @@ class Post < ApplicationRecord
     arr = []
     hashtag_regex = /\B#\w\w+/
     text_hashtags_title = post_description.scan(hashtag_regex) if post_description.present?
-    binding.pry
     if text_hashtags_title.present?
       arr << text_hashtags_title
       tags = (arr.flatten).uniq
