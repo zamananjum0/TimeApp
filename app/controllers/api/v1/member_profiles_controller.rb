@@ -123,7 +123,7 @@ class Api::V1::MemberProfilesController < ApplicationController
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
-      resp_data  =  MemberProfile.profile_timeline(params, user_session.user)
+      resp_data  =  MemberProfile.profil e_timeline(params, user_session.user)
       render json: resp_data
     else
       resp = {resp_status: 0, message: 'Invalid Token', error: '', data: {}}

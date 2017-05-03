@@ -178,7 +178,7 @@ class MemberProfile < ApplicationRecord
   def self.get_profile_response(profile, current_user)
     if profile.id == current_user.profile_id
       member_profile = profile.as_json(
-          only: [:id, :photo, :is_profile_public],
+          only: [:id, :photo, :is_profile_public, :remaining_posts_count],
           methods: [:posts_count, :followings_count, :followers_count],
           include: {
               user: {
@@ -279,7 +279,7 @@ class MemberProfile < ApplicationRecord
   end
 
   def posts_count
-    self.posts.count
+    self.posts.where(is_deleted: false).try(:count)
   end
 
   def followings_count
