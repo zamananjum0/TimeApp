@@ -378,7 +378,9 @@ class Post < ApplicationRecord
             member_profile:{
               only:[:id, :photo],
               include:{
-                  only:[:id, :username, :email]
+                  user: {
+                      only: [:id, :username, :email]
+                  }
               }
             },
             recent_likes: {
