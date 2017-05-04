@@ -5,7 +5,7 @@
 
 # Example:
 #
-# set :output, "/path/to/my/cron_log.log"
+set :output, "#{Rails.root}/log/rake.log"
 #
 # every 2.hours do
 #   command "/usr/bin/some_great_command"
@@ -18,7 +18,14 @@
 #   runner "Event.define_ranking"
 # end
 
-every 30.minutes do
+# every 30.minutes do
+#   rake "define_ranking"
+# end
+every 1.hour do
+  rake "send_notification"
+end
+
+every 1.hour do
   rake "define_ranking"
 end
 

@@ -1,18 +1,7 @@
 module Notification
 
-  def self.send_event_notification(user, alert, screen, is_save_notification, screen_data = {})
+  def self.send_event_notification(user, alert, screen, screen_data = {})
     begin
-      badge  =  1
-
-      if is_save_notification
-        push_notification             = PushNotification.new
-        push_notification.user_id     = user.id
-        push_notification.alert       = alert
-        push_notification.badge       = badge
-        push_notification.screen      = screen
-        push_notification.screen_data = screen_data
-        push_notification.save
-      end
       if user.present? && user.device_type.present? && user.device_token.present?
         if user.device_type == AppConstants::DEVICE_IOS
           data = {
@@ -41,26 +30,7 @@ module Notification
               }
           )
           notification = app.push_notifications
-        elsif user.device_type == AppConstants::DEVICE_ANDR
-          data = {
-              alert: alert,
-              badge: badge,
-              s:     screen,
-              uid:   user.id,
-              sdata: screen_data
-          }
-
-          app = RailsPushNotifications::GCMApp.first
-          app.notifications.create(
-              destinations: [user.device_token],
-              data:         data
-          )
-          notification = app.push_notifications
         end
-      else
-        puts "XX"*20
-        puts "Notification not send"
-        puts "XX"*20
       end
     rescue => e
       puts e.inspect

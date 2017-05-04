@@ -1,5 +1,6 @@
 task :define_ranking => :environment do
-  events  =  Event.where('end_date >= ? AND end_date <= ?', DateTime.now.beginning_of_day.to_s, DateTime.now.to_s).order('end_date DESC')
+  # events  =  Event.where('end_date >= ? AND end_date <= ?', DateTime.now.beginning_of_day.to_s, DateTime.now.to_s).order('end_date DESC')
+  events = Event.where("DATE_PART('hour', end_date) = ? AND DATE(end_date) = DATE(?)", DateTime.now.hour, Date.today)
   events && events.each do |event|
     tag_ids  = event.hashtags.pluck(:id)
     post_ids = MediaTag.where(media_type: AppConstants::POST, hashtag_id: tag_ids).pluck(:media_id)
