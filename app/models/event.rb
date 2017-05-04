@@ -319,24 +319,14 @@ class Event < ApplicationRecord
   def self.events_response(events)
     events = events.as_json(
         only:    [:id, :name, :location, :description, :start_date, :end_date, :created_at, :updated_at, :is_deleted],
-        methods: [:post_count],
-        include:{
-            media_tags:{
-                only:[:id, :name]
-            }
-        }
+        methods: [:post_count]
     )
     { events: events }.as_json
   end
 
   def self.event_response(event)
     event = event.as_json(
-        only:[:id, :name, :location, :start_date, :end_date, :is_deleted, :hash_tag, :description],
-        include:{
-            media_tags:{
-                only:[:id, :name]
-            }
-        }
+        only:[:id, :name, :location, :start_date, :end_date, :is_deleted, :hash_tag, :description]
     )
 
     events_array = []
