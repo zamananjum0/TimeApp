@@ -198,11 +198,16 @@ class Post < ApplicationRecord
       member_ids   = following_ids.flatten.uniq
       posts        = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", member_ids, post_ids, false).distinct
 
+      if data[:search_key].present?
+        posts  = posts.where('lower(post_description) like ?', "%#{data[:search_key]}%".downcase)
+      end
+      
       if data[:max_post_date].present?
         posts = posts.where("created_at > ?", max_post_date)
       elsif data[:min_post_date].present?
         posts = posts.where("created_at < ?", min_post_date)
       end
+      
       posts = posts.order("created_at DESC")
       posts = posts.limit(@@limit)
 
@@ -210,10 +215,10 @@ class Post < ApplicationRecord
         Post.where("created_at > ?", posts.first.created_at).present? ? previous_page_exist = true : previous_page_exist = false
         Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
       end
-      paging_data = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
-      resp_data = posts_array_response(posts, profile)
+      paging_data = {next_page_exist: next_page_exist || false, previous_page_exist: previous_page_exist || false}
+      resp_data   = posts_array_response(posts, profile)
       resp_status = 1
-      resp_message = 'Post list'
+      resp_message= 'Post list'
       resp_errors = ''
     rescue Exception => e
       resp_data       = {}

@@ -4,7 +4,9 @@ class Api::V1::PostsController < Api::V1::ApiProtectedController
   def post_list
     # params ={
     #   auth_token: UserSession.first.auth_token,
-    #   "per_page": 10
+    #   "per_page": 10,
+    #   "min_post_date": "2017-05-03T12:06:30.470Z",
+    #   "search_key": "#gaming"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
