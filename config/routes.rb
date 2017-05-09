@@ -51,6 +51,7 @@ Rails.application.routes.draw do
           get 'post_likes_list'
           get 'post_comments_list'
           post 're_post'
+          get 'search_posts_and_members'
         end
       end
       resources :comments
@@ -67,7 +68,6 @@ Rails.application.routes.draw do
           delete 'delete_group'
         end
       end
-      
       # Routes for web
       resources :dashboards, only:[:index]
       resources :users, only:[:index] do

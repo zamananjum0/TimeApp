@@ -70,4 +70,36 @@ class Api::V1::PostsController < Api::V1::ApiProtectedController
       return render json: resp_data
     end
   end
+  
+  def search_posts_and_members
+    # params ={
+    #   auth_token: UserSession.first.auth_token,
+    #   "per_page": 10,
+    #   "search_key": "#gaming"
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      posts_response  = Post.post_list(params, user_session.user)
+      posts_response  = JSON.parse posts_response
+      posts_data      = posts_response['data']['posts'] || []
+      
+      members_response  = MemberFollowing.search_member(params, user_session.user)
+      
+      members_response  = JSON.parse members_response
+      members_data      = members_response['data']['member_profiles'] || []
+      
+      response = {
+          resp_status: 1,
+          message: 'success',
+          data:{
+            posts: posts_data,
+            member_profiles: members_data
+          }
+      }
+      render json: response
+    else
+      resp_data = {resp_status: 0, message: 'Invalid Token', error: '', data: {}}
+      return render json: resp_data
+    end
+  end
 end
