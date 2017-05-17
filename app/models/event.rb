@@ -365,4 +365,45 @@ class Event < ApplicationRecord
   
     { events: events }.as_json
   end
+  
+  def self.send_event_notification
+    events = Event.where("DATE_PART('hour', start_date) = ? AND DATE(start_date) = DATE(?)", DateTime.now.hour, Date.today)
+    users  = User.where(is_deleted: false, profile_type: AppConstants::MEMBER)
+    events&.each do |event|
+      alert = AppConstants::NEW_EVENT
+      screen_data = {event_id: event.id, start_date: event.start_date, end_date: event.end_date, description: event.description}.as_json
+      push_notification             = PushNotification.new
+      push_notification.alert       = alert
+      push_notification.badge       = 1
+      push_notification.screen      = AppConstants::EVENT
+      push_notification.screen_data = screen_data
+      push_notification.save!
+    
+      users&.each do |user|
+        Notification.send_event_notification(user, alert, AppConstants::EVENT, screen_data)
+      end
+    end
+  end
+  
+  def self.define_ranking
+    # events  =  Event.where('end_date >= ? AND end_date <= ?', DateTime.now.beginning_of_day.to_s, DateTime.now.to_s).order('end_date DESC')
+    events = Event.where("DATE_PART('hour', end_date) = ? AND DATE(end_date) = DATE(?)", DateTime.now.hour, Date.today)
+    events && events.each do |event|
+      tag_ids  = event.hashtags.pluck(:id)
+      post_ids = MediaTag.where(media_type: AppConstants::POST, hashtag_id: tag_ids).pluck(:media_id)
+      posts    = Post.where('created_at >= ? AND created_at <= ? AND id IN (?)', event.start_date, event.end_date, post_ids)
+      post_ids = posts.pluck(:id)
+      post = Post.joins(:likes).select("posts.*, COUNT('likes.id') likes_count").where(likes: {likable_type: 'Post', is_like: true}, id: post_ids).group('posts.id').order('likes_count DESC').try(:first)
+    
+      if post.present?
+        event.post_id = post.id
+        event.member_profile_id = post.member_profile_id
+        event.save!
+        # Increase Post limit of profile
+        profile = post.member_profile
+        profile.remaining_posts_count  = profile.remaining_posts_count + AppConstants::POST_COUNT
+        profile.save!
+      end
+    end
+  end
 end
