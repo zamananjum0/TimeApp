@@ -160,4 +160,30 @@ class Like < ApplicationRecord
     
     {post_likes: post_likes}.as_json
   end
+  
+  def self.poll_like_notification(post_id, current_user)
+    begin
+      post        = Post.find_by_id(post_id)
+      profile_ids = post.post_members.pluck(:member_profile_id)
+      profile_ids << post.member_profile_id
+      users       = User.where(profile_id: profile_ids.uniq)
+      ## ======================== Send Notification ========================
+      users && users.each do |user|
+        if user != current_user
+          if user.profile_id == post.member_profile_id
+            message = AppConstants::POST_LIKE
+          else
+            message = AppConstants::POST_LIKE_OTHER
+          end
+          name = current_user.username || current_user.email
+          alert = name + ' ' + message
+          screen_data = {post_id: post_id}.as_json
+          Notification.send_event_notification(user, alert, AppConstants::POST, true, screen_data)
+        end
+      end
+        ## ===================================================================
+    rescue Exception => e
+      puts e
+    end
+  end
 end

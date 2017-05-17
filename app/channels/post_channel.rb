@@ -41,7 +41,10 @@ class PostChannel < ApplicationCable::Channel
     json_obj = JSON.parse(response)
     post_id  = json_obj['data']['post']['id'] if json_obj['data']['post'].present?
     if post_id.present?
-      Post.post_sync(post_id, current_user)
+      users = Post.post_sync(post_id, current_user)
+      if users.present?
+        Post.post_creation_notification(post_id, current_user, users)
+      end
     end
   end
   
@@ -58,6 +61,7 @@ class PostChannel < ApplicationCable::Channel
       object_id   = json_obj['data']['like']['likable_id']
       object_type = json_obj['data']['like']['likable_type']
       Like.broadcast_like(resp_broadcast, object_id, object_type)
+      Like.poll_like_notification(object_id, current_user)
     end
   end
 
@@ -69,6 +73,7 @@ class PostChannel < ApplicationCable::Channel
       object_id   = json_obj['data']['comments'][0]['commentable_id']
       object_type = json_obj['data']['comments'][0]['commentable_type']
       Comment.broadcast_comment(broadcast_response, object_id,  object_type)
+      Comment.post_comment_notification(object_id, current_user)
     end
   end
   

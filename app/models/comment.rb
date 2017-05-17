@@ -157,4 +157,37 @@ class Comment < ApplicationRecord
       JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
     end
   end
+
+  def self.post_comment_notification(post_id, current_user)
+    begin
+      post                 = Post.find_by_id(post_id)
+      post_created_by_user = User.find_by_profile_id(post.member_profile_id)
+      profile_ids = post.post_members.pluck(:member_profile_id)
+      
+      followers_profile_ids = MemberFollowing.where(following_profile_id: post.member_profile_id, following_status: AppConstants::ACCEPTED).pluck(:member_profile_id)
+      profile_ids << followers_profile_ids
+      profile_ids << post.member_profile_id
+      users       = User.where(profile_id: profile_ids.uniq)
+      ## ======================== Send Notification ========================
+      users && users.each do |user|
+        if user != current_user
+          name = current_user.username ||  current_user.email
+          if user.profile_id == post.member_profile_id
+            alert = name + ' ' + AppConstants::POST_COMMENT_YOUR_POST
+          else
+            if current_user == post_created_by_user
+              alert = name + ' ' + AppConstants::POST_COMMENT_OWN
+            else
+              alert = name + ' ' + 'commented on' + ' ' + post_created_by_user.username || post_created_by_user.email + '\'s poll'
+            end
+          end
+          screen_data = {post_id: post_id}.as_json
+          Notification.send_event_notification(user, alert, AppConstants::POST, true, screen_data)
+        end
+      end
+        ## ===================================================================
+    rescue Exception => e
+      puts e
+    end
+  end
 end

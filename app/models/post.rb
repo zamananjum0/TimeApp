@@ -58,7 +58,7 @@ class Post < ApplicationRecord
   end
   
   def self.post_create(data, current_user)
-    # begin
+    begin
       data = data.with_indifferent_access
       profile = current_user.profile
       post = profile.posts.build(data[:post])
@@ -80,12 +80,12 @@ class Post < ApplicationRecord
         resp_message    = 'You are exceeding your posts limit'
         resp_errors     = ''
       end
-    # rescue Exception => e
-    #   resp_data       = {}
-    #   resp_status     = 0
-    #   resp_message    = 'error'
-    #   resp_errors     = e
-    # end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+    end
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
@@ -240,13 +240,13 @@ class Post < ApplicationRecord
     # Followers
     member_profile_ids << MemberFollowing.where("following_profile_id = ? AND following_status = ? ", current_user.profile_id, AppConstants::ACCEPTED).pluck(:member_profile_id)
     users = User.where(profile_id: member_profile_ids.flatten.uniq)
-
+    
     users && users.each do |user|
       if user != current_user
         make_post_sync_response(user, posts)
       end
     end
-
+    users
   end
 
   def self.make_post_sync_response(user, posts)
@@ -490,6 +490,17 @@ class Post < ApplicationRecord
     resp_request_id   = data[:request_id]
     response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
     [response, new_post]
+  end
+
+  def self.post_creation_notification(post_id, current_user, reciever_users)
+    ## ======================== Send Notification ========================
+    reciever_users&.each do |reciever_user|
+      name = current_user.username || current_user.full_name || current_user.email
+      alert = name + ' ' + AppConstants::NEW_POST
+      screen_data = {post_id: post_id}.as_json
+      Notification.send_event_notification(reciever_user, alert, AppConstants::POST, true, screen_data)
+    end
+    ## ===================================================================
   end
 end
 
