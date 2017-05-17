@@ -102,4 +102,19 @@ class Api::V1::PostsController < Api::V1::ApiProtectedController
       return render json: resp_data
     end
   end
+
+  def show
+    # params = {
+    #     "auth_token": "asdfghgfds",
+    #     "id": "-3cf6-49d1-b78e-53ea2c43b44d"
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      response = Post.post_show(params, user_session.user)
+      render json: response
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
 end

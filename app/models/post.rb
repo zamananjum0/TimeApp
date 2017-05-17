@@ -137,6 +137,30 @@ class Post < ApplicationRecord
 
     {post: post}.as_json
   end
+  
+  def self.post_show(data, current_user)
+    begin
+      post = Post.find_by_id(data[:id])
+      if post.present?
+        resp_data       = post.post_response
+        resp_status     = 1
+        resp_message    = 'Post'
+        resp_errors     = ''
+      else
+        resp_data       = {}
+        resp_status     = 0
+        resp_message    = 'Post not found'
+        resp_errors     = ''
+      end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id   = data[:request_id] || ''
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+  end
 
   def self.post_destroy(data, current_user)
     begin

@@ -45,7 +45,7 @@ Rails.application.routes.draw do
           post 'block_event'
         end
       end
-      resources :posts, only: [:index, :destroy] do
+      resources :posts, only: [:index, :destroy, :show] do
         collection do
           get 'post_list'
           get 'post_likes_list'
