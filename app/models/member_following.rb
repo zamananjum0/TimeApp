@@ -112,7 +112,7 @@ class MemberFollowing < ApplicationRecord
     end
     resp_request_id = data[:request_id]
     response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-    if is_accepted == 1
+    if is_accepted
       begin
         member_following_notification(member_following, current_user)
       rescue Exception => e
