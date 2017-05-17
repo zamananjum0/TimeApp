@@ -81,7 +81,7 @@ class MemberFollowing < ApplicationRecord
       following_to_profile = MemberProfile.find(data[:following_profile_id])
       is_accepted = false
       if member_following.blank?
-        member_following   = member_profile.member_followings.build
+        member_following   =  member_profile.member_followings.build
         member_following.following_profile_id = data[:following_profile_id]
         if following_to_profile #&& following_to_profile.is_profile_public
           member_following.following_status = AppConstants::ACCEPTED
@@ -103,7 +103,6 @@ class MemberFollowing < ApplicationRecord
         resp_status  = 1
         resp_errors  = ''
       end
-
       resp_data      = {is_im_following: MemberProfile.is_following(following_to_profile, current_user)}
     rescue Exception => e
       resp_data      = {}
@@ -113,6 +112,12 @@ class MemberFollowing < ApplicationRecord
     end
     resp_request_id = data[:request_id]
     response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    if is_accepted == 1
+      begin
+        member_following_notification(member_following, current_user)
+      rescue Exception => e
+      end
+    end
     [response, is_accepted]
   end
 
@@ -399,6 +404,18 @@ class MemberFollowing < ApplicationRecord
 
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
+  end
+
+  def self.member_following_notification(member_following, current_user)
+    name  =  current_user.username || current_user.email
+    following_to_profile  = MemberProfile.find(member_following.following_profile_id)
+    if member_following.following_status  ==  AppConstants::ACCEPTED
+      alert  = name + ' ' + AppConstants::START_FOLLOWING_YOU
+    else
+      alert  = name + ' ' + AppConstants::FRIEND_REQUEST
+    end
+    screen_data = {member_following_id: member_following.id, status: member_following.following_status, member_profile_id: member_following.member_profile_id}.as_json
+    Notification.send_event_notification(following_to_profile.user, alert, AppConstants::FOLLOWER_SCREEN, true, screen_data)
   end
 end
 
