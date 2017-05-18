@@ -177,7 +177,7 @@ class Like < ApplicationRecord
           end
           name = current_user.username || current_user.email
           alert = name + ' ' + message
-          screen_data = {post_id: post_id}.as_json
+          screen_data = {post_id: post_id , type: 'like'}.as_json
           Notification.send_event_notification(user, alert, AppConstants::POST, true, screen_data)
         end
       end

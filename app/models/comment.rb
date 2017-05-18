@@ -181,7 +181,7 @@ class Comment < ApplicationRecord
               alert = name + ' ' + 'commented on' + ' ' + post_created_by_user.username || post_created_by_user.email + '\'s poll'
             end
           end
-          screen_data = {post_id: post_id}.as_json
+          screen_data = {post_id: post_id, type: 'comment'}.as_json
           Notification.send_event_notification(user, alert, AppConstants::POST, true, screen_data)
         end
       end
