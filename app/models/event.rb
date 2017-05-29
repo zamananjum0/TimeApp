@@ -8,7 +8,7 @@ class Event < ApplicationRecord
   has_many :posts
   has_many :hashtags, through: :media_tags
   has_many :media_tags, as: :media, dependent: :destroy
-  belongs_to :post   #this only for wiining post
+  belongs_to :post   #this only for winning post
   
   after_commit :process_hashtags
   pg_search_scope :search_by_title,

@@ -11,7 +11,9 @@ class User < ApplicationRecord
   
   has_many   :user_sessions
   has_many   :user_authentications, dependent: :destroy
+  has_many   :push_notifications
   belongs_to :profile, polymorphic: true
+  
   
   accepts_nested_attributes_for :user_authentications
   attr_accessor :login

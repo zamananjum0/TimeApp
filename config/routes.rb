@@ -68,6 +68,7 @@ Rails.application.routes.draw do
           delete 'delete_group'
         end
       end
+      resources :push_notifications, only: [:index]
       # Routes for web
       resources :dashboards, only:[:index]
       resources :users, only:[:index] do
