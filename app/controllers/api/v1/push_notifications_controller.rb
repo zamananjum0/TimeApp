@@ -1,11 +1,11 @@
 class Api::V1::PushNotificationsController < ApplicationController
   
   def index
-    params ={
-      auth_token: UserSession.last.auth_token,
-      "page": 1,
-      "per_page": 10
-    }
+    # params ={
+    #   auth_token: UserSession.last.auth_token,
+    #   "page": 1,
+    #   "per_page": 10
+    # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
       resp_data = PushNotification.notification_list(params, user_session.user)
