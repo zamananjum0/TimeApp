@@ -15,11 +15,11 @@ set :output, "log/rake.log"
 #
 
 every 1.hour do
-  rake "Event.send_event_notification"
+  runner "Event.send_event_notification"
 end
 
 every 1.hour do
-  rake "Event.define_ranking"
+  runner "Event.define_ranking"
 end
 
 # every 1.hour do
