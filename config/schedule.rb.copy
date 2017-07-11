@@ -14,20 +14,20 @@ set :output, "log/rake.log"
 # end
 #
 
-# every 1.hour do
-#   runner "Event.send_event_notification"
-# end
-
-# every 1.hour do
-#   runner "Event.define_ranking"
-# end
-
 every 15.minutes do
-  rake "define_ranking"
+  runner "Event.define_ranking"
 end
 
 every 15.minutes do
-  rake "send_notification"
+  runner "Event.send_event_notification"
 end
+
+# every 15.minutes do
+#   rake "define_ranking"
+# end
+#
+# every 15.minutes do
+#   rake "send_notification"
+# end
 
 # Learn more: http://github.com/javan/whenever
