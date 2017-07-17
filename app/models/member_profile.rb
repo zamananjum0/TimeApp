@@ -24,6 +24,9 @@ class MemberProfile < ApplicationRecord
         }
     }
 
+  def member_rank
+    "#{(self.winning_count/self.competition_count)*100}"
+  end
 
   def self.sign_up(data)
     data = data.with_indifferent_access
@@ -72,7 +75,7 @@ class MemberProfile < ApplicationRecord
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
         only: [:id, :photo, :is_profile_public],
-        methods: [:posts_count,:followings_count, :followers_count, :competition_count, :winning_count],
+        methods: [:posts_count,:followings_count, :followers_count, :member_rank],
         include: {
             user: {
                 only: [:id, :username, :email],

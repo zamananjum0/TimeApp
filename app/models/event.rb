@@ -154,7 +154,7 @@ class Event < ApplicationRecord
       else
         events  = Event.where('end_date < ? AND is_deleted = false', DateTime.now)
       end
-      events = events.where('post_id IS NOT NULL')
+      events = events.where('post_id IS NOT NULL').includes(:post, :hashtags)
       
       # posts = []
       # last_event_date  = ''
@@ -232,62 +232,6 @@ class Event < ApplicationRecord
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
-  # def self.leader_winners_new(data, current_user)
-  #   begin
-  #     data = data.with_indifferent_access
-  #     per_page     = (data[:per_page] || @@limit).to_i
-  #     page         = (data[:page] || 1).to_i
-  #
-  #     profile = current_user.profile
-  #     groups  = profile.groups
-  #     records = []
-  #
-  #     groups      = groups.page(page.to_i).per_page(per_page.to_i)
-  #     paging_data = JsonBuilder.get_paging_data(page, per_page, groups)
-  #
-  #     groups && groups.each do |group|
-  #       group_members = group.group_members
-  #       if group_members.present?
-  #         group_member_ids = group_members.pluck(:member_profile_id)
-  #         member_profile = MemberProfile.joins(:events).select("member_profiles.*, COUNT('events.id') event_count").where(id: group_member_ids).group('member_profiles.id').order('event_count DESC').try(:first)
-  #
-  #         if member_profile.present?
-  #           user = member_profile.user
-  #           records << {
-  #               id:   group.id,
-  #               name: group.name,
-  #               grou_members:[
-  #                   {
-  #                     id: group_members.where(member_profile_id: member_profile.id).try(:first).id,
-  #                     member_profile:{
-  #                         id:    member_profile.id,
-  #                         photo: member_profile.photo,
-  #                         user:{
-  #                             id:       user.id,
-  #                             username: user.username,
-  #                             email:    user.email
-  #                         }
-  #                     }
-  #                   }
-  #               ]
-  #           }
-  #         end
-  #       end
-  #     end
-  #     resp_data   = {groups: records}.as_json
-  #     resp_status = 1
-  #     resp_message = 'Group list'
-  #     resp_errors = ''
-  #   rescue Exception => e
-  #     resp_data       = {}
-  #     resp_status     = 0
-  #     paging_data     = ''
-  #     resp_message    = 'error'
-  #     resp_errors     = e
-  #   end
-  #   resp_request_id   = data[:request_id]
-  #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  # end
   
   def self.competitions(data, current_user)
     begin
@@ -351,6 +295,7 @@ class Event < ApplicationRecord
                     },
                     member_profile: {
                         only: [:id, :photo],
+                        methods: [:member_rank],
                         include: {
                             user: {
                                 only: [:id, :username, :email]
