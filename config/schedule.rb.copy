@@ -5,7 +5,7 @@
 
 # Example:
 #
-set :output, "log/rake.log"
+set :output, "log/whenever.log"
 #
 # every 2.hours do
 #   command "/usr/bin/some_great_command"
@@ -14,11 +14,11 @@ set :output, "log/rake.log"
 # end
 #
 
-every 15.minutes do
+every 1.hour do
   runner "Event.define_ranking"
 end
 
-every 15.minutes do
+every 1.hour do
   runner "Event.send_event_notification"
 end
 
