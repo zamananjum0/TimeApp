@@ -34,7 +34,7 @@ class Event < ApplicationRecord
     tags = (arr.flatten).uniq
     ids = []
    
-    tags&.each do |ar|
+    tags && tags.each do |ar|
       tag = Hashtag.where("lower(name) = ?", ar.downcase).first
       if tag.present?
         tag.count = tag.count + 1

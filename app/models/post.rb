@@ -186,7 +186,7 @@ class Post < ApplicationRecord
   def self.posts_array_response(post_array, profile, sync_token=nil)
     @@current_profile = profile
     posts = post_array.as_json(
-        only: [:id, :post_description, :created_at, :updated_at, :is_deleted],
+        only: [:id, :post_description, :created_at, :updated_at, :is_deleted, :event_id],
         methods: [:likes_count, :liked_by_me, :comments_count],
         include: {
             member_profile: {
