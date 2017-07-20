@@ -294,11 +294,11 @@ class MemberProfile < ApplicationRecord
   end
   
   def competition_count
-    self.posts.pluck(:event_id).try(:uniq).try(:count)
+    self.try(:posts).pluck(:event_id).try(:uniq).try(:count) || 0
   end
 
   def winning_count
-    self.events.count
+    self.events.count || 0
   end
 
   def self.profile_timeline(data, current_user)
