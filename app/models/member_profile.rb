@@ -25,7 +25,8 @@ class MemberProfile < ApplicationRecord
     }
 
   def member_rank
-    "#{(self.winning_count/self.competition_count)*100}"
+    # "#{(self.winning_count/self.competition_count)*100}"
+    10
   end
 
   def self.sign_up(data)
