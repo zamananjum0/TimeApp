@@ -25,8 +25,11 @@ class MemberProfile < ApplicationRecord
     }
 
   def member_rank
-    # "#{(self.winning_count/self.competition_count)*100}"
-    "10"
+    if self.competition_count > 0
+      "#{(self.winning_count/self.competition_count)*100}"
+    else
+      "0"
+    end
   end
 
   def self.sign_up(data)
