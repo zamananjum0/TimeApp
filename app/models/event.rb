@@ -317,15 +317,12 @@ class Event < ApplicationRecord
     events&.each do |event|
       alert = AppConstants::NEW_EVENT + ',' + ' ' + event.description
       screen_data = {event_id: event.id}.as_json
-      push_notification             = PushNotification.new
-      push_notification.alert       = alert
-      push_notification.badge       = 1
-      push_notification.screen      = AppConstants::EVENT
-      push_notification.screen_data = screen_data
-      push_notification.save!
-    
+      
       users&.each do |user|
-        Notification.send_event_notification(user, alert, AppConstants::EVENT, screen_data)
+        profile = user.profile
+        day = Time.now.strftime("%A")
+        is_notification_send  =  profile.days_of_the_week.include? day
+        Notification.send_event_notification(user, alert, AppConstants::EVENT, true, screen_data) if is_notification_send.present?
       end
     end
   end
