@@ -93,7 +93,7 @@ class Post < ApplicationRecord
   def post_response
     post = self.as_json(
         only: [:id, :post_title, :post_description],
-        methods: [:likes_count, :comments_count],
+        methods: [:likes_count, :comments_count, :is_event_post],
         include: {
             member_profile: {
                 only: [:id, :photo],
@@ -186,8 +186,8 @@ class Post < ApplicationRecord
   def self.posts_array_response(post_array, profile, sync_token=nil)
     @@current_profile = profile
     posts = post_array.as_json(
-        only: [:id, :post_description, :created_at, :updated_at, :is_deleted, :event_id],
-        methods: [:likes_count, :liked_by_me, :comments_count],
+        only: [:id, :post_description, :created_at, :updated_at, :is_deleted],
+        methods: [:likes_count, :liked_by_me, :comments_count, :is_event_post],
         include: {
             member_profile: {
                 only: [:id, :photo],
@@ -396,6 +396,12 @@ class Post < ApplicationRecord
 
   def comments_count
     self.comments.where(is_deleted: false).count
+  end
+  
+  def is_event_post
+    hashtag_ids = self.media_tags.pluck(:hashtag_id)
+    media_tag = MediaTag.where('media_type = ? AND hashtag_id IN(?)', AppConstants::EVENT, hashtag_ids)
+    media_tag.present? ? true : false
   end
   
   def self.timeline_posts_array_response(posts, profile, current_user)
