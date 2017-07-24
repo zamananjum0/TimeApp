@@ -62,7 +62,8 @@ class Post < ApplicationRecord
       data = data.with_indifferent_access
       profile = current_user.profile
       post = profile.posts.build(data[:post])
-      if profile.posts.count < profile.remaining_posts_count
+      if profile.remaining_posts_count > 0
+        post.remaining_posts_count  =  post.remaining_posts_count - 1
         if post.save
           resp_data       = post.post_response
           resp_status     = 1
