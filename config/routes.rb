@@ -39,8 +39,8 @@ Rails.application.routes.draw do
       resources :events do
         collection do
           get 'event_posts'
-          get 'global_winners'
-          get 'leaderboard_winners'
+          # get 'global_winners'
+          get 'winners'
           get 'competitions'
           post 'block_event'
         end

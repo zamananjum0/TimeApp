@@ -94,7 +94,7 @@ class Group < ApplicationRecord
       end
       resp_data       = {}
       resp_status     = 1
-      resp_message    = 'Group Uupdated'
+      resp_message    = 'Group Updated'
       resp_errors     = ''
       
     else
@@ -116,10 +116,10 @@ class Group < ApplicationRecord
   def self.delete_group(data, current_user)
     begin
       data  = data.with_indifferent_access
-      profile = current_user.profile
-      groups = profile.groups.where(id: data[:id])
-      if groups.present?
-        groups.destroy_all
+      # profile = current_user.profile
+      group = Group.find_by_id_and_member_profile_id(data[:id], current_user.profile_id)
+      if group.present?
+        group.destroy
         resp_data   = {}
         resp_status = 1
         resp_message = 'Group deleted'

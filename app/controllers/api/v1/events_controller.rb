@@ -89,31 +89,32 @@ class Api::V1::EventsController < Api::V1::ApiProtectedController
   end
 
   # Call from app
-  def global_winners
-    # params = {
-    #     "auth_token": UserSession.last.auth_token,
-    #     # "max_event_date": end_date
-    # }
-    user_session = UserSession.find_by_auth_token(params[:auth_token])
-    if user_session.present?
-      resp_data  =  Event.global_winners(params, user_session.user)
-      render json: resp_data
-    else
-      resp = {resp_data: {}, resp_status: 0, resp_message: 'error'}
-      return render json: resp
-    end
-  end
+  # def global_winners
+  #   # params = {
+  #   #     "auth_token": UserSession.last.auth_token,
+  #   #     # "max_event_date": end_date
+  #   # }
+  #   user_session = UserSession.find_by_auth_token(params[:auth_token])
+  #   if user_session.present?
+  #     resp_data  =  Event.global_winners(params, user_session.user)
+  #     render json: resp_data
+  #   else
+  #     resp = {resp_data: {}, resp_status: 0, resp_message: 'error'}
+  #     return render json: resp
+  #   end
+  # end
 
   # Call from app
-  def leaderboard_winners
+  def winners
     # params = {
     #     "auth_token": UserSession.last.auth_token,
-    #     "page": 2,
-    #     "per_page": 1
+    #     "page": 1,
+    #     "per_page": 10,
+    #     "group_id": "03078899-1f3e-4ed3-81b0-20b50a4cf7f1"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
-      resp_data  =  Event.leader_winners(params, user_session.user)
+      resp_data  =  Event.winners(params, user_session.user)
       render json: resp_data
     else
       resp = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', error: ''}
