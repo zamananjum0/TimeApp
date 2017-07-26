@@ -186,7 +186,7 @@ class MemberProfile < ApplicationRecord
     if profile.id == current_user.profile_id
       member_profile = profile.as_json(
           only: [:id, :photo, :is_profile_public, :remaining_posts_count],
-          methods: [:posts_count, :followings_count, :followers_count],
+          methods: [:posts_count, :followings_count, :followers_count, :member_rank],
           include: {
               user: {
                   only: [:id, :email, :username]
