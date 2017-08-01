@@ -234,7 +234,7 @@ class Event < ApplicationRecord
   
   def self.winners_response(member_profiles)
     member_profiles = member_profiles.as_json(
-        only: [:id, :photo],
+        only:    [:id, :photo],
         methods: [:member_rank],
         include: {
             user: {
@@ -253,10 +253,16 @@ class Event < ApplicationRecord
       alert       = AppConstants::NEW_EVENT + ',' + ' ' + event.description
       screen_data = { event_id: event.id }.as_json
       
+      # users&.each do |user|
+      #   profile              = user.profile
+      #   day                  = Time.now.strftime("%A")
+      #   is_notification_send = profile.days_of_the_week.include? day
+      #   Notification.send_event_notification(user, alert, AppConstants::EVENT, true, screen_data) if is_notification_send.present?
+      # end
+      
       users&.each do |user|
-        profile              = user.profile
         day                  = Time.now.strftime("%A")
-        is_notification_send = profile.days_of_the_week.include? day
+        is_notification_send = user.profile.profile_schedules.where("DATE_PART('hour', available_start_time) = ? AND day = ?", DateTime.now.hour, day)
         Notification.send_event_notification(user, alert, AppConstants::EVENT, true, screen_data) if is_notification_send.present?
       end
     end

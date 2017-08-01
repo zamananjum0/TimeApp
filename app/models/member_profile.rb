@@ -6,14 +6,15 @@ class MemberProfile < ApplicationRecord
   include AppConstants
   include PgSearch
 
-  has_many :member_followings
   has_one  :user, as: :profile
+  has_many :member_followings
   has_many :synchronizations
   has_many :posts
   has_many :events
   has_many :groups
   has_many :events   #just for calculating the winning events
-  accepts_nested_attributes_for :user
+  has_many :profile_schedules, dependent: :destroy
+  accepts_nested_attributes_for :user, :profile_schedules
   
   pg_search_scope :search_by_name,
     against: :name,
@@ -83,6 +84,9 @@ class MemberProfile < ApplicationRecord
         include: {
             user: {
                 only: [:id, :username, :email],
+            },
+            profile_schedules: {
+                only: [:id, :available_start_time, :available_end_time, :day]
             }
         }
     ).merge!(auth_token: auth_token).as_json

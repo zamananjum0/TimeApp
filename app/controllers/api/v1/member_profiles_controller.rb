@@ -133,15 +133,24 @@ class Api::V1::MemberProfilesController < ApplicationController
 
   def profile_update
     # params = {
-    #     "auth_token": "1111111",
+    #     "auth_token": UserSession.last.auth_token,
     #     "member_profile":{
     #         "photo": "URL",
     #         "available_start_time": "2016-06-2 10:48:49",
-    #         "available_end_time": "2016-06-12 10:48:49"
-    #     },
-    #     "user":{
-    #         "username":"Paracha",
-    #         "id":"1"
+    #         "available_end_time": "2016-06-12 10:48:49",
+    #         "profile_schedules_attributes": [
+    #           {
+    #               "id": "5692ecf2-b852-4762-8288-c7db85e7eac4",
+    #               "available_start_time": "2016-08-2 10:48:49",
+    #               "available_end_time": "2016-08-12 10:48:49",
+    #               "day": "Monday"
+    #           },
+    #           {
+    #               "available_start_time": "2016-08-2 10:48:49",
+    #               "available_end_time": "2016-08-12 10:48:49",
+    #               "day": "Wednesday"
+    #           }
+    #         ]
     #     }
     # }
   
