@@ -117,4 +117,26 @@ class Api::V1::PostsController < Api::V1::ApiProtectedController
       return render json: resp_data
     end
   end
+  
+  def delete_post
+    # params = {
+    #     "auth_token": UserSession.last.auth_token,
+    #     "id": "9deaec7f-5dcf-4e3f-adfa-be06ee890483"
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      post = Post.find_by_id(params[:id])
+      if post.present? && post.member_profile_id == user_session.user.profile_id
+        post.is_deleted = true
+        post.save
+        response = {resp_data: {}, resp_status: 1, resp_message: 'Post successfully deleted', resp_error: ''}.as_json
+      else
+        response = {resp_data: {}, resp_status: 0, resp_message: 'Either id is invalid or you are not the owner of the post', resp_error: 'error'}.as_json
+      end
+      render json: response
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
 end

@@ -52,6 +52,7 @@ Rails.application.routes.draw do
           get 'post_comments_list'
           post 're_post'
           get 'search_posts_and_members'
+          delete 'delete_post'
         end
       end
       resources :comments
