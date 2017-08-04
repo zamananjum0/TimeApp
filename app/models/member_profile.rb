@@ -224,7 +224,7 @@ class MemberProfile < ApplicationRecord
         current_user = User.find_by_id(current_user.id)
       end
       if profile.update_attributes(data[:member_profile])
-        resp_data    = current_user.profile.member_profile
+        resp_data    = current_user.profile.member_profile(data[:auth_token])
         resp_status  = 1
         resp_message = 'success'
         resp_errors  = ''
