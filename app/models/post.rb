@@ -11,7 +11,7 @@ class Post < ApplicationRecord
   has_many :recent_comments, -> { order(created_at: :desc).limit(10) }, class_name: 'Comment', as: :commentable
   has_many :recent_likes, -> { order(created_at: :desc).limit(10) }, class_name: 'Like', as: :likable
   
-  
+  has_many :shared_posts, dependent: :destroy
   has_many :hashtags, through: :media_tags
   has_many :media_tags, as: :media, dependent: :destroy
   accepts_nested_attributes_for :post_attachments, :post_members
@@ -189,7 +189,7 @@ class Post < ApplicationRecord
     @@current_profile = profile
     posts             = post_array.as_json(
         only:    [:id, :post_description, :created_at, :updated_at, :is_deleted],
-        methods: [:likes_count, :liked_by_me, :comments_count, :is_event_post],
+        methods: [:likes_count, :liked_by_me, :comments_count, :is_event_post, :is_shared_by_me],
         include: {
             member_profile:   {
                 only:    [:id, :photo],
@@ -223,7 +223,7 @@ class Post < ApplicationRecord
       following_ids << profile.id
       member_ids = following_ids.flatten.uniq
       posts      = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", member_ids, post_ids, false).distinct
-      
+  
       if data[:search_key].present?
         posts = posts.where('lower(post_description) like ?', "%#{data[:search_key]}%".downcase)
       end
@@ -392,6 +392,15 @@ class Post < ApplicationRecord
     end
   end
   
+  def is_shared_by_me
+    shared_post = self.shared_posts.where(member_profile_id: @@current_profile.id).try(:first)
+    if shared_post.present?
+      true
+    else
+      false
+    end
+  end
+  
   def post_members_counts
     self.post_members.count
   end
@@ -503,6 +512,8 @@ class Post < ApplicationRecord
           new_post_attachment.height          = attachment.height
           new_post_attachment.save!
         end
+        
+        SharedPost.create!(user_id: current_user.id, post_id: post)
         resp_data    = {}
         resp_status  = 1
         resp_message = 'Post created'

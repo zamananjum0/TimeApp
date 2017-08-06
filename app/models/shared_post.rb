@@ -1,0 +1,2 @@
+class SharedPost < ApplicationRecord
+end
