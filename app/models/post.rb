@@ -513,7 +513,7 @@ class Post < ApplicationRecord
           new_post_attachment.save!
         end
         
-        SharedPost.create!(user_id: current_user.id, post_id: post)
+        SharedPost.create!(member_profile_id: profile.id, post_id: post.id)
         resp_data    = {}
         resp_status  = 1
         resp_message = 'Post created'
