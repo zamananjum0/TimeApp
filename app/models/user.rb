@@ -174,13 +174,13 @@ class User < ApplicationRecord
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 
-  def send_email
-    UserMailer.registration_confirmation(email).deliver
+  def self.send_email(email)
+    UserMailer.registration_confirmation(email).deliver_later
   end
 
-  def self.send_forgot_password_email(email)
-    user = User.find_by_email(data[:user][:email])
-  end
+  # def self.send_forgot_password_email(email)
+  #   user = User.find_by_email(data[:user][:email])
+  # end
 
   def login=(login)
     @login = login

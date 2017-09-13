@@ -18,16 +18,19 @@ class Post < ApplicationRecord
   
   @@limit           = 10
   @@current_profile = nil
+  
+  default_scope -> { where(is_deleted: false)}
+  
   after_commit :process_hashtags
   
   pg_search_scope :search_by_title,
-                  against: [:post_description, :post_title],
-                  using:   {
-                      tsearch: {
-                          any_word:   true,
-                          dictionary: 'english'
-                      }
-                  }
+    against: [:post_description, :post_title],
+    using:   {
+        tsearch: {
+            any_word:   true,
+            dictionary: 'english'
+        }
+    }
   
   def process_hashtags
     arr                 = []
