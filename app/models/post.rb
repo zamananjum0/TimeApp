@@ -18,16 +18,19 @@ class Post < ApplicationRecord
   
   @@limit           = 10
   @@current_profile = nil
+  
+  default_scope -> { where(is_deleted: false)}
+  
   after_commit :process_hashtags
   
   pg_search_scope :search_by_title,
-                  against: [:post_description, :post_title],
-                  using:   {
-                      tsearch: {
-                          any_word:   true,
-                          dictionary: 'english'
-                      }
-                  }
+    against: [:post_description, :post_title],
+    using:   {
+        tsearch: {
+            any_word:   true,
+            dictionary: 'english'
+        }
+    }
   
   def process_hashtags
     arr                 = []
@@ -223,7 +226,7 @@ class Post < ApplicationRecord
       following_ids << profile.id
       member_ids = following_ids.flatten.uniq
       posts      = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", member_ids, post_ids, false).distinct
-  
+      
       if data[:search_key].present?
         posts = posts.where('lower(post_description) like ?', "%#{data[:search_key]}%".downcase)
       end
@@ -304,7 +307,7 @@ class Post < ApplicationRecord
       # member_ids   = following_ids.flatten.uniq
       # posts        = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", member_ids, post_ids, false).distinct
       #   Temporarily
-      posts          = Post.all
+      posts          = Post.where(is_deleted: false)
       if current_user.current_sign_in_at.blank? && last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.synced_datetime.present?
           posts = posts.where("created_at > ?", current_user.synced_datetime)

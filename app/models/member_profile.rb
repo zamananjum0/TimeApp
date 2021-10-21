@@ -41,6 +41,7 @@ class MemberProfile < ApplicationRecord
     status, message = validate_email_and_password(data)
     if !status.present?
       if member_profile.save
+        User.send_email(member_profile.user.email)
         resp_status  = 1
         resp_message = 'Please check your email and verify your account.'
         resp_errors  = ''
